@@ -1,9 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/tudou-proxy.js": {
+      "maxDuration": 300,
+      "supportsCancellation": true
+    }
+  },
   "rewrites": [
     {
       "source": "/api/tudou/:path*",
-      "destination": "https://api.ai-tudou.net/:path*"
+      "destination": "/api/tudou-proxy"
     },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
