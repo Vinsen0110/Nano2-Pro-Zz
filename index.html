@@ -14,8 +14,158 @@
                 document.documentElement.style.colorScheme = t;
             } catch (e) {}
         </script>
-      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js"></script>
+        <script>
+            if (new URLSearchParams(location.search).get("codexTest") === "1") {
+                window.showDirectoryPicker = async function () {
+                    var root = await navigator.storage.getDirectory();
+                    var name = "Codex Test Project " + Date.now();
+                    var directory = await root.getDirectoryHandle(name, { create: true });
+                    return new Proxy(directory, {
+                        get: function (target, property) {
+                            if (property === "name") return name;
+                            if (property === "queryPermission" || property === "requestPermission") {
+                                return async function () { return "granted"; };
+                            }
+                            var value = target[property];
+                            return typeof value === "function" ? value.bind(target) : value;
+                        }
+                    });
+                };
+            }
+        </script>
+        <script>
+            (function () {
+                var nativeFetch = window.fetch.bind(window);
+                var useLocalTudouProxy = location.hostname === "127.0.0.1" || location.hostname === "localhost";
+                var proxiedFetch = function (input, init) {
+                    var method = String((init && init.method) || (input && input.method) || "GET").toUpperCase();
+                    var rawUrl = typeof input === "string" || input instanceof URL ? String(input) : input && input.url;
+                    if (useLocalTudouProxy && method === "GET" && rawUrl) {
+                        try {
+                            var target = new URL(rawUrl, location.href);
+                            var isTudouResult = target.protocol === "https:" &&
+                                target.hostname !== "api.ai-tudou.net" &&
+                                (target.hostname === "ai-tudou.net" || target.hostname.endsWith(".ai-tudou.net"));
+                            if (isTudouResult) {
+                                return nativeFetch("/api/tudou-image?url=" + encodeURIComponent(target.href), init);
+                            }
+                        } catch (error) {}
+                    }
+                    if (useLocalTudouProxy && rawUrl) {
+                        try {
+                            var apiTarget = new URL(rawUrl, location.href);
+                            if (apiTarget.hostname === "api.ai-tudou.net") {
+                                return nativeFetch("/api/tudou" + apiTarget.pathname + apiTarget.search, init);
+                            }
+                        } catch (error) {}
+                    }
+                    return nativeFetch(input, init);
+                };
+                window.fetch = proxiedFetch;
+                var nativeXhrOpen = XMLHttpRequest.prototype.open;
+                XMLHttpRequest.prototype.open = function (method, url) {
+                    if (useLocalTudouProxy) {
+                        try {
+                            var target = new URL(String(url), location.href);
+                            if (target.hostname === "api.ai-tudou.net") {
+                                arguments[1] = "/api/tudou" + target.pathname + target.search;
+                            }
+                        } catch (error) {}
+                    }
+                    return nativeXhrOpen.apply(this, arguments);
+                };
+                var testParams = new URLSearchParams(location.search);
+                var testImageUrl = testParams.get("codexImageTest");
+                if (testParams.get("codexTest") === "1" && testImageUrl) {
+                    proxiedFetch(testImageUrl)
+                        .then(function (response) {
+                            return response.blob().then(function (blob) {
+                                document.documentElement.setAttribute("data-codex-image-proxy", JSON.stringify({
+                                    ok: response.ok,
+                                    status: response.status,
+                                    bytes: blob.size,
+                                    type: blob.type
+                                }));
+                            });
+                        })
+                        .catch(function (error) {
+                            document.documentElement.setAttribute("data-codex-image-proxy", JSON.stringify({
+                                ok: false,
+                                error: error && error.message || String(error)
+                            }));
+                        });
+                }
+            })();
+        </script>
+      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260723-9"></script>
       <link rel="stylesheet" crossorigin href="./assets/index-DT58oPsm.css">
+      <style>
+        .laowu-canvas-viewport {
+          overflow: clip !important;
+        }
+        @media (min-width: 768px) {
+          .laowu-config-main {
+            padding-left: 40px !important;
+            padding-right: 40px !important;
+          }
+        }
+        @media (max-width: 767px) {
+          .laowu-config-modal {
+            width: calc(100vw - 24px) !important;
+            max-width: none !important;
+            margin: 12px auto !important;
+            top: 0 !important;
+            padding-bottom: 0 !important;
+          }
+          .laowu-config-modal .ant-modal-content { border-radius: 12px !important; }
+          .laowu-config-shell {
+            height: calc(100vh - 88px) !important;
+            max-height: none !important;
+            flex-direction: column;
+          }
+          .laowu-config-sidebar {
+            width: 100% !important;
+            padding: 14px 16px !important;
+            border-right: 0 !important;
+            border-bottom: 1px solid #e7e5e4 !important;
+          }
+          .laowu-config-sidebar > div:first-child { margin-bottom: 12px !important; }
+          .laowu-config-sidebar nav {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+          }
+          .laowu-config-sidebar nav button {
+            width: auto !important;
+            min-width: 116px;
+            height: 40px;
+          }
+          .laowu-config-main { padding: 16px 16px 24px !important; }
+          .laowu-config-main > div:first-child {
+            margin-bottom: 16px !important;
+            padding-right: 32px;
+          }
+          .laowu-config-main .md\:grid-cols-3,
+          .laowu-config-main .md\:grid-cols-2 {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+          .laowu-config-main button { white-space: nowrap; }
+          .laowu-config-modal .ant-modal-close {
+            top: 14px !important;
+            right: 14px !important;
+          }
+          .laowu-config-modal .ant-modal-footer {
+            position: static !important;
+            display: flex;
+            justify-content: flex-end;
+            height: 64px;
+            margin: 0 !important;
+            padding: 12px 16px !important;
+            border-top: 1px solid #e7e5e4;
+            background: #fff;
+          }
+        }
+      </style>
     </head>
     <body class="bg-background text-foreground antialiased">
         <div id="root"></div>
