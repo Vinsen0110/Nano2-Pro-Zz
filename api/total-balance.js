@@ -1,8 +1,10 @@
 const APOLLO_ORIGIN = "https://api.apilio.ai";
 
 export default async function handler(request, response) {
+    response.setHeader("Access-Control-Allow-Origin", "*");
+    response.setHeader("Cache-Control", "no-store");
+
     if (request.method === "OPTIONS") {
-        response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
         response.setHeader("Access-Control-Allow-Headers", "Content-Type");
         response.status(204).end();
@@ -51,7 +53,6 @@ export default async function handler(request, response) {
             data = { success: false, message: text || "Invalid upstream response" };
         }
 
-        response.setHeader("Access-Control-Allow-Origin", "*");
         response.status(upstream.status).json(data);
     } catch (error) {
         response.status(500).json({ success: false, message: error instanceof Error ? error.message : "Balance proxy failed" });
