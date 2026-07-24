@@ -1,3 +1,5 @@
+const APOLLO_ORIGIN = "https://api.apilio.ai";
+
 export default async function handler(request, response) {
     if (request.method === "OPTIONS") {
         response.setHeader("Access-Control-Allow-Origin", "*");
@@ -22,8 +24,19 @@ export default async function handler(request, response) {
             return;
         }
 
-        const root = baseUrl.replace(/\/+$/, "").replace(/\/v1$/i, "").replace(/\/api$/i, "");
-        const upstream = await fetch(`${root}/api/user/self`, {
+        let configuredOrigin;
+        try {
+            configuredOrigin = new URL(baseUrl).origin;
+        } catch {
+            response.status(400).json({ success: false, message: "Invalid Apollo baseUrl" });
+            return;
+        }
+        if (configuredOrigin !== APOLLO_ORIGIN) {
+            response.status(400).json({ success: false, message: "Unsupported balance provider" });
+            return;
+        }
+
+        const upstream = await fetch(`${APOLLO_ORIGIN}/api/user/self`, {
             method: "GET",
             headers: {
                 Authorization: `Bearer ${token}`,
