@@ -15,28 +15,10 @@
             } catch (e) {}
         </script>
         <script>
-            if (new URLSearchParams(location.search).get("codexTest") === "1") {
-                window.showDirectoryPicker = async function () {
-                    var root = await navigator.storage.getDirectory();
-                    var name = "Codex Test Project " + Date.now();
-                    var directory = await root.getDirectoryHandle(name, { create: true });
-                    return new Proxy(directory, {
-                        get: function (target, property) {
-                            if (property === "name") return name;
-                            if (property === "queryPermission" || property === "requestPermission") {
-                                return async function () { return "granted"; };
-                            }
-                            var value = target[property];
-                            return typeof value === "function" ? value.bind(target) : value;
-                        }
-                    });
-                };
-            }
-        </script>
-        <script>
             (function () {
                 var nativeFetch = window.fetch.bind(window);
-                var useLocalTudouProxy = location.hostname === "127.0.0.1" || location.hostname === "localhost";
+                var useLocalTudouProxy = Boolean(window.oldHouseDesktop) ||
+                    location.hostname === "127.0.0.1" || location.hostname === "localhost";
                 var proxiedFetch = function (input, init) {
                     var method = String((init && init.method) || (input && input.method) || "GET").toUpperCase();
                     var rawUrl = typeof input === "string" || input instanceof URL ? String(input) : input && input.url;
@@ -74,95 +56,770 @@
                     }
                     return nativeXhrOpen.apply(this, arguments);
                 };
-                var testParams = new URLSearchParams(location.search);
-                var testImageUrl = testParams.get("codexImageTest");
-                if (testParams.get("codexTest") === "1" && testImageUrl) {
-                    proxiedFetch(testImageUrl)
-                        .then(function (response) {
-                            return response.blob().then(function (blob) {
-                                document.documentElement.setAttribute("data-codex-image-proxy", JSON.stringify({
-                                    ok: response.ok,
-                                    status: response.status,
-                                    bytes: blob.size,
-                                    type: blob.type
-                                }));
-                            });
-                        })
-                        .catch(function (error) {
-                            document.documentElement.setAttribute("data-codex-image-proxy", JSON.stringify({
-                                ok: false,
-                                error: error && error.message || String(error)
-                            }));
-                        });
-                }
             })();
         </script>
-      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260807-1"></script>
+      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260811-28"></script>
       <link rel="stylesheet" crossorigin href="./assets/index-DT58oPsm.css">
       <style>
         .laowu-canvas-viewport {
           overflow: clip !important;
         }
-        @media (min-width: 768px) {
-          .laowu-config-main {
-            padding-left: 40px !important;
-            padding-right: 40px !important;
+        .canvas-site-control {
+          position: absolute;
+          z-index: 50;
+          top: 12px;
+          left: 12px;
+          display: inline-grid;
+          width: max-content;
+          max-width: min(300px, calc(100% - 24px));
+          align-items: start;
+          gap: 8px;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .canvas-site-brand {
+          display: flex;
+          min-width: 0;
+          align-items: center;
+          gap: 8px;
+        }
+        .canvas-site-logo {
+          width: 32px;
+          height: 32px;
+          flex: 0 0 auto;
+          object-fit: contain;
+        }
+        .canvas-site-brand-name {
+          overflow: hidden;
+          color: #1d2939;
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 20px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .canvas-site-current-label {
+          margin-left: 4px;
+          color: #98a2b3;
+          font-size: 11px;
+          font-weight: 500;
+          line-height: 18px;
+          white-space: nowrap;
+        }
+        .dark .canvas-site-brand-name {
+          color: #f5f5f4;
+        }
+        .dark .canvas-site-current-label {
+          color: #a8a29e;
+        }
+        .canvas-fps-meter {
+          position: absolute;
+          right: 20px;
+          bottom: 20px;
+          z-index: 50;
+          display: inline-flex;
+          height: 34px;
+          min-width: 78px;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          padding: 0 11px;
+          border: 1px solid rgba(148, 163, 184, 0.32);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.88);
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+          backdrop-filter: blur(10px);
+          pointer-events: none;
+        }
+        .canvas-fps-label {
+          color: #98a2b3;
+          font-size: 10px;
+          font-weight: 700;
+        }
+        .canvas-fps-value {
+          min-width: 22px;
+          color: #16a34a;
+          font-size: 12px;
+          font-variant-numeric: tabular-nums;
+          font-weight: 750;
+          text-align: right;
+        }
+        .canvas-fps-meter[data-level="fair"] .canvas-fps-value {
+          color: #d97706;
+        }
+        .canvas-fps-meter[data-level="slow"] .canvas-fps-value {
+          color: #dc2626;
+        }
+        .canvas-fps-meter[data-level="waiting"] .canvas-fps-value {
+          color: #98a2b3;
+        }
+        .dark .canvas-fps-meter {
+          border-color: rgba(120, 113, 108, 0.48);
+          background: rgba(28, 25, 23, 0.86);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+        }
+        .laowu-config-modal {
+          max-width: calc(100vw - 32px) !important;
+          padding-bottom: 0 !important;
+        }
+        .laowu-config-modal .ant-modal-content {
+          overflow: hidden;
+          padding: 0 !important;
+          border: 1px solid #e8ebef;
+          border-radius: 14px !important;
+          background: #fff;
+          box-shadow: 0 24px 80px rgba(15, 23, 42, 0.16);
+        }
+        .laowu-config-modal .ant-modal-body {
+          padding: 0 !important;
+        }
+        .laowu-config-modal .ant-modal-close {
+          top: 18px !important;
+          right: 18px !important;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          color: #98a2b3;
+          outline: none;
+        }
+        .laowu-config-modal .ant-modal-close:hover {
+          color: #344054;
+          background: #f2f4f7;
+        }
+        .laowu-config-modal .ant-modal-close:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(46, 144, 250, 0.14);
+        }
+        .laowu-config-shell {
+          min-height: 560px;
+        }
+        .laowu-config-sidebar {
+          width: 218px;
+          padding: 24px 14px;
+          background: #fafbfc !important;
+        }
+        .laowu-config-brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+          margin: 0 8px 30px;
+        }
+        .laowu-config-logo {
+          width: 36px;
+          height: 36px;
+          flex: 0 0 auto;
+          object-fit: contain;
+        }
+        .laowu-config-brand-name {
+          overflow: hidden;
+          color: #1d2939;
+          font-size: 15px;
+          font-weight: 700;
+          line-height: 20px;
+          letter-spacing: 0;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .laowu-config-brand-subtitle {
+          margin-top: 2px;
+          color: #98a2b3;
+          font-size: 12px;
+          line-height: 16px;
+        }
+        .laowu-config-nav {
+          display: grid;
+          gap: 6px;
+        }
+        .laowu-config-main {
+          padding: 24px 42px 42px !important;
+        }
+        .laowu-config-page-header {
+          margin-bottom: 26px;
+          padding-right: 42px;
+        }
+        .laowu-config-breadcrumb {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #98a2b3;
+          font-size: 13px;
+          line-height: 20px;
+        }
+        .laowu-config-breadcrumb span {
+          color: #d0d5dd;
+        }
+        .laowu-config-page-title {
+          margin: 7px 0 0;
+          color: #101828;
+          font-size: 22px;
+          font-weight: 700;
+          line-height: 30px;
+          letter-spacing: 0;
+        }
+        .api-settings-page,
+        .settings-section {
+          width: 100%;
+          max-width: 780px;
+        }
+        .api-site-tabs {
+          display: inline-flex;
+          max-width: 100%;
+          margin-bottom: 28px;
+          padding: 3px;
+          overflow-x: auto;
+          border: 1px solid #e4e7ec;
+          border-radius: 10px;
+          background: #f8f9fb;
+          box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        }
+        .api-site-tab {
+          min-width: 94px;
+          height: 34px;
+          flex: 0 0 auto;
+          padding: 0 15px;
+          border: 0;
+          border-radius: 7px;
+          background: transparent;
+          color: #667085;
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 34px;
+          letter-spacing: 0;
+          cursor: pointer;
+          transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+        }
+        .api-site-tab:hover {
+          color: #344054;
+        }
+        .api-site-tab.is-active {
+          background: #fff;
+          color: #175cd3;
+          box-shadow: 0 1px 3px rgba(16, 24, 40, 0.12);
+        }
+        .api-settings-section {
+          margin-bottom: 28px;
+          padding-bottom: 28px;
+          border-bottom: 1px solid #eaecf0;
+        }
+        .api-settings-section:last-child {
+          margin-bottom: 0;
+          border-bottom: 0;
+        }
+        .api-section-heading {
+          display: flex;
+          min-height: 32px;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 14px;
+        }
+        .api-section-heading h3 {
+          margin: 0;
+          color: #344054;
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 22px;
+          letter-spacing: 0;
+        }
+        .api-key-actions {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+        .api-key-actions .ant-btn {
+          border-radius: 8px;
+          box-shadow: none;
+        }
+        .api-key-row {
+          display: grid;
+          grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+          align-items: end;
+          gap: 14px;
+        }
+        .imgbb-key-row {
+          max-width: 540px;
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .api-balance-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+        }
+        .api-field {
+          display: grid;
+          min-width: 0;
+          gap: 7px;
+        }
+        .api-field-label {
+          color: #475467;
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 18px;
+        }
+        .api-key-picker {
+          position: relative;
+          width: 100%;
+        }
+        .api-key-picker-trigger {
+          position: relative;
+          width: 100%;
+          height: 44px;
+          padding: 0 40px 0 13px;
+          overflow: hidden;
+          border: 1px solid #dfe3e8;
+          border-radius: 10px;
+          background: #fff;
+          color: #344054;
+          font: inherit;
+          font-size: 14px;
+          line-height: 42px;
+          text-align: left;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          cursor: pointer;
+          outline: none;
+          transition: border-color 160ms ease, box-shadow 160ms ease;
+        }
+        .api-key-picker-trigger::after {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          width: 7px;
+          height: 7px;
+          border-right: 1px solid #667085;
+          border-bottom: 1px solid #667085;
+          content: "";
+          transform: rotate(45deg);
+        }
+        .api-key-picker-trigger:hover,
+        .api-key-picker-trigger:focus-visible {
+          border-color: #84adff;
+          box-shadow: 0 0 0 3px rgba(46, 144, 250, 0.12);
+        }
+        .api-key-picker-menu {
+          position: absolute;
+          z-index: 20;
+          top: calc(100% + 6px);
+          right: 0;
+          left: 0;
+          max-height: 188px;
+          padding: 4px;
+          overflow-y: auto;
+          border: 1px solid #e4e7ec;
+          border-radius: 10px;
+          background: #fff;
+          box-shadow: 0 12px 24px rgba(16, 24, 40, 0.14);
+        }
+        .api-key-picker-option {
+          display: block;
+          width: 100%;
+          min-height: 36px;
+          padding: 0 10px;
+          border: 0;
+          border-radius: 7px;
+          background: transparent;
+          color: #344054;
+          font: inherit;
+          font-size: 14px;
+          line-height: 36px;
+          text-align: left;
+          cursor: pointer;
+        }
+        .api-key-picker-option:hover,
+        .api-key-picker-option[aria-selected="true"] {
+          background: #eff6ff;
+          color: #175cd3;
+        }
+        .api-native-control,
+        .api-name-input.ant-input,
+        .api-balance-input.ant-input,
+        .api-balance-password.ant-input-affix-wrapper,
+        .api-key-input.ant-input-affix-wrapper {
+          width: 100%;
+          height: 44px;
+          border: 1px solid #dfe3e8 !important;
+          border-radius: 10px !important;
+          background: #fff;
+          color: #344054;
+          font-size: 14px;
+          box-shadow: none !important;
+          outline: none;
+          transition: border-color 160ms ease, box-shadow 160ms ease;
+        }
+        .api-native-control {
+          padding: 0 34px 0 12px;
+        }
+        .api-name-input.ant-input,
+        .api-balance-input.ant-input {
+          padding: 0 13px;
+        }
+        .api-balance-password.ant-input-affix-wrapper,
+        .api-key-input.ant-input-affix-wrapper {
+          padding: 0 12px;
+        }
+        .api-native-control:focus,
+        .api-name-input.ant-input:focus,
+        .api-balance-input.ant-input:focus,
+        .api-balance-password.ant-input-affix-wrapper-focused,
+        .api-key-input.ant-input-affix-wrapper-focused {
+          border-color: #84adff !important;
+          box-shadow: 0 0 0 3px rgba(46, 144, 250, 0.12) !important;
+        }
+        .settings-section {
+          padding-bottom: 28px;
+          border-bottom: 1px solid #eaecf0;
+        }
+        .settings-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 20px 18px;
+        }
+        .settings-field {
+          min-width: 0;
+          margin-bottom: 0 !important;
+        }
+        .settings-field-wide {
+          grid-column: 1 / -1;
+        }
+        .settings-grid .ant-form-item-label {
+          padding-bottom: 7px !important;
+        }
+        .settings-grid .ant-form-item-label > label {
+          height: auto !important;
+          color: #475467 !important;
+          font-size: 12px !important;
+          font-weight: 600;
+        }
+        .settings-grid .ant-select,
+        .settings-grid .ant-select-selector {
+          min-height: 44px !important;
+        }
+        .settings-grid .ant-select-selector {
+          align-items: center;
+          border-color: #dfe3e8 !important;
+          border-radius: 10px !important;
+          box-shadow: none !important;
+        }
+        .dark .canvas-balance-button {
+          border-color: rgba(120, 113, 108, 0.56) !important;
+          background: rgba(28, 25, 23, 0.9) !important;
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24) !important;
+        }
+        .dark .canvas-balance-account,
+        .dark .canvas-balance-account svg {
+          color: #6ee7b7 !important;
+        }
+        .dark .canvas-balance-key,
+        .dark .canvas-balance-key svg {
+          color: #a5b4fc !important;
+        }
+        .dark .canvas-balance-button svg {
+          fill: rgba(255, 255, 255, 0.05) !important;
+        }
+        .dark .canvas-balance-button:hover {
+          border-color: rgba(168, 162, 158, 0.72) !important;
+          background: rgba(41, 37, 36, 0.96) !important;
+        }
+        .dark .canvas-generation-panel {
+          box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34) !important;
+        }
+        .dark .canvas-generation-toolbar {
+          border-color: rgba(120, 113, 108, 0.5) !important;
+          background: rgba(28, 25, 23, 0.94) !important;
+          color: #e7e5e4 !important;
+        }
+        .dark .canvas-reference-strip {
+          border-color: rgba(244, 114, 182, 0.28) !important;
+          background: rgba(80, 7, 36, 0.24) !important;
+        }
+        .dark .canvas-reference-thumb {
+          border-color: rgba(168, 162, 158, 0.44) !important;
+          background: #292524 !important;
+        }
+        .dark .canvas-reference-thumb:hover {
+          border-color: rgba(244, 114, 182, 0.72) !important;
+        }
+        .dark .canvas-model-select,
+        .dark .canvas-generation-select,
+        .dark .canvas-prompt-preset-select {
+          background: #292524 !important;
+          color: #e7e5e4 !important;
+        }
+        .dark .canvas-model-select:hover,
+        .dark .canvas-generation-select:hover,
+        .dark .canvas-prompt-preset-select:hover {
+          background: #3a3634 !important;
+        }
+        .dark .canvas-generation-menu,
+        .dark .canvas-model-menu,
+        .dark .canvas-prompt-preset-menu {
+          border-color: #44403c !important;
+          background: #1c1917 !important;
+          color: #e7e5e4 !important;
+        }
+        .dark .canvas-generation-menu [data-highlighted],
+        .dark .canvas-model-menu [data-highlighted],
+        .dark .canvas-prompt-preset-menu [data-highlighted] {
+          background: #3a3634 !important;
+          color: #fafaf9 !important;
+        }
+        .dark .canvas-model-menu > div,
+        .dark .canvas-model-menu > div > div {
+          background: #1c1917 !important;
+        }
+        .dark .canvas-model-menu button {
+          color: #d6d3d1 !important;
+        }
+        .dark .canvas-model-menu button:hover,
+        .dark .canvas-model-menu button.bg-white {
+          background: #292524 !important;
+          color: #f472b6 !important;
+        }
+        @layer theme {
+          html.dark .canvas-generation-toolbar .canvas-generate-button {
+            border-color: rgba(244, 114, 182, 0.46) !important;
+            background-color: rgba(80, 7, 36, 0.72) !important;
+            color: #f9a8d4 !important;
+          }
+          html.dark .canvas-generation-toolbar .canvas-generate-button:hover {
+            border-color: rgba(244, 114, 182, 0.72) !important;
+            background-color: rgba(131, 24, 67, 0.72) !important;
+          }
+          html.dark .canvas-generation-toolbar .canvas-generate-button:disabled {
+            border-color: #44403c !important;
+            background-color: #292524 !important;
+            color: #78716c !important;
+          }
+          .dark .canvas-generate-button .bg-pink-100 {
+            background: rgba(131, 24, 67, 0.72) !important;
+            color: #fbcfe8 !important;
+          }
+          html.dark .settings-grid button {
+            border-color: #44403c !important;
+            background-color: #292524 !important;
+            color: #f5f5f4 !important;
+          }
+          html.dark .settings-grid button:disabled {
+            color: #a8a29e !important;
           }
         }
+        .dark .laowu-config-modal .ant-modal-content {
+          border-color: #3f3f46 !important;
+          background: #1c1917 !important;
+          box-shadow: 0 24px 80px rgba(0, 0, 0, 0.48) !important;
+        }
+        .dark .laowu-config-modal .ant-modal-close {
+          color: #a8a29e !important;
+        }
+        .dark .laowu-config-modal .ant-modal-close:hover {
+          color: #fafaf9 !important;
+          background: #292524 !important;
+        }
+        .dark .laowu-config-shell,
+        .dark .laowu-config-main {
+          background: #1c1917 !important;
+          color: #e7e5e4 !important;
+        }
+        .dark .laowu-config-sidebar {
+          border-color: #3f3f46 !important;
+          background: #171717 !important;
+        }
+        .dark .laowu-config-brand-name,
+        .dark .laowu-config-page-title {
+          color: #fafaf9 !important;
+        }
+        .dark .laowu-config-brand-subtitle,
+        .dark .laowu-config-breadcrumb {
+          color: #a8a29e !important;
+        }
+        .dark .laowu-config-breadcrumb span {
+          color: #57534e !important;
+        }
+        .dark .laowu-config-nav button {
+          color: #a8a29e !important;
+        }
+        .dark .laowu-config-nav button:hover {
+          background: #292524 !important;
+          color: #fafaf9 !important;
+        }
+        .dark .laowu-config-nav button.bg-blue-50 {
+          background: rgba(30, 64, 175, 0.22) !important;
+          color: #93c5fd !important;
+        }
+        .dark .laowu-config-nav button.bg-blue-50 > span {
+          color: #60a5fa !important;
+        }
+        .dark .api-site-tabs {
+          border-color: #44403c;
+          background: #171717;
+          box-shadow: none;
+        }
+        .dark .api-site-tab {
+          color: #a8a29e;
+        }
+        .dark .api-site-tab:hover {
+          color: #f5f5f4;
+        }
+        .dark .api-site-tab.is-active {
+          background: #292524;
+          color: #93c5fd;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.42);
+        }
+        .dark .api-settings-section,
+        .dark .settings-section {
+          border-color: #3f3f46;
+        }
+        .dark .api-section-heading h3,
+        .dark .api-field-label,
+        .dark .settings-grid .ant-form-item-label > label {
+          color: #d6d3d1 !important;
+        }
+        .dark .api-key-picker-trigger,
+        .dark .api-key-picker-menu,
+        .dark .api-native-control,
+        .dark .api-name-input.ant-input,
+        .dark .api-balance-input.ant-input,
+        .dark .api-balance-password.ant-input-affix-wrapper,
+        .dark .api-key-input.ant-input-affix-wrapper,
+        .dark .settings-grid .ant-select-selector,
+        .dark .settings-grid .ant-segmented,
+        .dark .settings-grid button {
+          border-color: #44403c !important;
+          background: #292524 !important;
+          color: #f5f5f4 !important;
+        }
+        .dark .api-balance-password .ant-input,
+        .dark .api-key-input .ant-input {
+          background: transparent !important;
+          color: #f5f5f4 !important;
+        }
+        .dark .api-key-picker-trigger::after {
+          border-color: #a8a29e;
+        }
+        .dark .api-key-picker-menu {
+          box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+        }
+        .dark .api-key-picker-option {
+          color: #d6d3d1;
+        }
+        .dark .api-key-picker-option:hover,
+        .dark .api-key-picker-option[aria-selected="true"] {
+          background: rgba(30, 64, 175, 0.24);
+          color: #93c5fd;
+        }
+        .dark .api-key-actions .ant-btn {
+          border-color: #57534e;
+          background: #292524;
+          color: #e7e5e4;
+        }
+        .dark .api-key-actions .ant-btn-dangerous {
+          border-color: rgba(248, 113, 113, 0.5);
+          color: #fca5a5;
+        }
+        .dark .settings-grid .ant-segmented-item {
+          color: #a8a29e;
+        }
+        .dark .settings-grid .ant-segmented-item-selected {
+          background: #44403c !important;
+          color: #fafaf9 !important;
+          box-shadow: none !important;
+        }
+        .dark .laowu-config-modal input::placeholder {
+          color: #78716c !important;
+        }
         @media (max-width: 767px) {
-          .laowu-config-modal {
-            width: calc(100vw - 24px) !important;
-            max-width: none !important;
-            margin: 12px auto !important;
-            top: 0 !important;
-            padding-bottom: 0 !important;
+          .canvas-site-control {
+            top: 8px;
+            left: 8px;
+            max-width: calc(100% - 16px);
           }
-          .laowu-config-modal .ant-modal-content { border-radius: 12px !important; }
+          .canvas-balance-stack {
+            top: 88px !important;
+          }
+          .laowu-config-modal {
+            width: calc(100vw - 16px) !important;
+            max-width: none !important;
+            margin: 8px auto !important;
+            top: 0 !important;
+          }
+          .laowu-config-modal .ant-modal-content {
+            border-radius: 12px !important;
+          }
           .laowu-config-shell {
-            height: calc(100vh - 88px) !important;
+            height: calc(100vh - 16px) !important;
             max-height: none !important;
             flex-direction: column;
           }
           .laowu-config-sidebar {
             width: 100% !important;
-            padding: 14px 16px !important;
+            padding: 12px 14px !important;
             border-right: 0 !important;
-            border-bottom: 1px solid #e7e5e4 !important;
+            border-bottom: 1px solid #eaecf0 !important;
           }
-          .laowu-config-sidebar > div:first-child { margin-bottom: 12px !important; }
-          .laowu-config-sidebar nav {
+          .laowu-config-brand {
+            margin: 0 4px 10px;
+          }
+          .laowu-config-logo {
+            width: 30px;
+            height: 30px;
+          }
+          .laowu-config-brand-subtitle {
+            display: none;
+          }
+          .laowu-config-nav {
             display: flex;
             gap: 8px;
             overflow-x: auto;
           }
-          .laowu-config-sidebar nav button {
+          .laowu-config-nav button {
             width: auto !important;
-            min-width: 116px;
-            height: 40px;
+            min-width: 120px;
+            height: 40px !important;
           }
-          .laowu-config-main { padding: 16px 16px 24px !important; }
-          .laowu-config-main > div:first-child {
-            margin-bottom: 16px !important;
+          .laowu-config-main {
+            padding: 18px 16px 30px !important;
+          }
+          .laowu-config-page-header {
+            margin-bottom: 20px;
             padding-right: 32px;
           }
-          .laowu-config-main .md\:grid-cols-3,
-          .laowu-config-main .md\:grid-cols-2 {
-            grid-template-columns: minmax(0, 1fr) !important;
+          .laowu-config-page-title {
+            font-size: 20px;
+            line-height: 28px;
           }
-          .laowu-config-main button { white-space: nowrap; }
           .laowu-config-modal .ant-modal-close {
-            top: 14px !important;
-            right: 14px !important;
+            top: 10px !important;
+            right: 10px !important;
           }
-          .laowu-config-modal .ant-modal-footer {
-            position: static !important;
+          .api-site-tabs {
             display: flex;
-            justify-content: flex-end;
-            height: 64px;
-            margin: 0 !important;
-            padding: 12px 16px !important;
-            border-top: 1px solid #e7e5e4;
-            background: #fff;
+            width: 100%;
+            margin-bottom: 22px;
+          }
+          .api-site-tab {
+            min-width: 110px;
+            flex: 1 0 auto;
+          }
+          .api-section-heading {
+            align-items: flex-start;
+          }
+          .api-key-row,
+          .api-balance-grid,
+          .settings-grid {
+            grid-template-columns: minmax(0, 1fr);
+          }
+          .settings-field-wide {
+            grid-column: auto;
+          }
+          .api-key-actions {
+            gap: 6px;
+          }
+          .api-key-actions .ant-btn {
+            padding-inline: 9px;
           }
         }
       </style>
