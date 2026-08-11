@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { inlineTudouGeminiReferences, isTudouGeminiImageTarget } from "./tudou-reference-images.js";
 
 const root = resolve(process.cwd());
 const host = process.env.HOST || "127.0.0.1";
@@ -48,6 +49,18 @@ function requestHeaders(request) {
     }
     headers.set("Accept-Encoding", "identity");
     return headers;
+}
+
+async function readRequestBody(request, maxBytes = 8 * 1024 * 1024) {
+    const chunks = [];
+    let bytes = 0;
+    for await (const chunk of request) {
+        const value = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        bytes += value.byteLength;
+        if (bytes > maxBytes) throw new Error("Tudou proxy request body is too large");
+        chunks.push(value);
+    }
+    return Buffer.concat(chunks);
 }
 
 async function pipeFetchResponse(upstream, response, extraHeaders = {}) {
@@ -97,15 +110,37 @@ async function proxyTudouApi(request, response, requestUrl) {
     });
 
     try {
+        const headers = requestHeaders(request);
+        const isGeminiImageRequest = method === "POST"
+            && isTudouGeminiImageTarget(target)
+            && String(request.headers["content-type"] || "").includes("application/json");
+        let convertedReferences = 0;
+        let body;
+        if (method !== "GET" && method !== "HEAD") {
+            if (isGeminiImageRequest) {
+                const payload = JSON.parse((await readRequestBody(request)).toString("utf8"));
+                const normalized = await inlineTudouGeminiReferences(target, payload, {
+                    signal: controller.signal,
+                });
+                body = JSON.stringify(normalized.payload);
+                convertedReferences = normalized.converted;
+                headers.delete("content-length");
+            } else {
+                body = request;
+            }
+        }
         const upstream = await fetch(target, {
             method,
-            headers: requestHeaders(request),
-            body: method === "GET" || method === "HEAD" ? undefined : request,
-            duplex: method === "GET" || method === "HEAD" ? undefined : "half",
+            headers,
+            body,
+            duplex: body === request ? "half" : undefined,
             redirect: "manual",
             signal: controller.signal,
         });
-        await pipeFetchResponse(upstream, response, { "X-Tudou-Proxy": "local-node-stream" });
+        await pipeFetchResponse(upstream, response, {
+            "X-Tudou-Proxy": "local-node-stream",
+            "X-Tudou-References-Inlined": String(convertedReferences),
+        });
     } catch (error) {
         if (controller.signal.aborted) return;
         console.error("Tudou API proxy failed:", errorDetails(error));

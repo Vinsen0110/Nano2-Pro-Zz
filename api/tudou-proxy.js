@@ -1,3 +1,5 @@
+import { inlineTudouGeminiReferences, isTudouGeminiImageTarget } from "../tudou-reference-images.js";
+
 const TUDOU_ORIGIN = "https://api.ai-tudou.net";
 const ALLOWED_METHODS = new Set(["GET", "HEAD", "OPTIONS", "POST"]);
 const ALLOWED_PATH = /^\/(?:images|tasks|v1|v1beta)(?:\/|$)/;
@@ -72,9 +74,21 @@ async function proxyTudou(request) {
     if (contentType) headers.set("Content-Type", contentType);
 
     try {
-        const body = method === "GET" || method === "HEAD"
-            ? undefined
-            : await request.arrayBuffer();
+        let convertedReferences = 0;
+        let body;
+        if (method !== "GET" && method !== "HEAD") {
+            const rawBody = await request.arrayBuffer();
+            if (isTudouGeminiImageTarget(target) && contentType?.includes("application/json")) {
+                const payload = JSON.parse(new TextDecoder().decode(rawBody));
+                const normalized = await inlineTudouGeminiReferences(target, payload, {
+                    signal: request.signal,
+                });
+                body = JSON.stringify(normalized.payload);
+                convertedReferences = normalized.converted;
+            } else {
+                body = rawBody;
+            }
+        }
         const upstream = await fetch(target, {
             method,
             headers,
@@ -87,6 +101,7 @@ async function proxyTudou(request) {
             "Cache-Control": "no-store",
             "Content-Type": upstream.headers.get("content-type") || "application/json; charset=utf-8",
             "X-Tudou-Proxy": "vercel-node-stream",
+            "X-Tudou-References-Inlined": String(convertedReferences),
         });
         for (const name of ["retry-after", "x-oneapi-request-id", "x-request-id"]) {
             const value = upstream.headers.get(name);
