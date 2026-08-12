@@ -1,4 +1,4 @@
-const MAX_REFERENCE_BYTES = 32 * 1024 * 1024;
+const MAX_REFERENCE_BYTES = 14 * 1024 * 1024;
 const TUDOU_GEMINI_IMAGE_PATH = /^\/v1beta\/models\/[^/]+:(?:generateContent|streamGenerateContent)$/;
 
 export function isImgBbImageUrl(value) {
@@ -39,12 +39,12 @@ async function inlineImgBbImage(fileUri, signal, fetchImpl) {
     if (!mimeType) throw new Error("ImgBB reference did not return an image");
     const declaredBytes = Number(response.headers.get("content-length")) || 0;
     if (declaredBytes > MAX_REFERENCE_BYTES) {
-        throw new Error("ImgBB reference exceeds the 32 MB limit");
+        throw new Error("ImgBB reference exceeds the 14 MB limit");
     }
 
     const bytes = new Uint8Array(await response.arrayBuffer());
     if (bytes.byteLength > MAX_REFERENCE_BYTES) {
-        throw new Error("ImgBB reference exceeds the 32 MB limit");
+        throw new Error("ImgBB reference exceeds the 14 MB limit");
     }
     return { mimeType, data: Buffer.from(bytes).toString("base64") };
 }
