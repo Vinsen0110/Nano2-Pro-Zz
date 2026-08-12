@@ -58,7 +58,7 @@
                 };
             })();
         </script>
-      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260812-36"></script>
+      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260812-37"></script>
       <link rel="stylesheet" crossorigin href="./assets/index-DT58oPsm.css">
       <style>
         .laowu-canvas-viewport {
@@ -169,6 +169,8 @@
           display: none !important;
         }
         body:has(.canvas-site-switch-button:hover) .ant-tooltip,
+        body:has(button[aria-label="打开小地图"]:hover) .ant-tooltip,
+        body:has(button[aria-label="关闭小地图"]:hover) .ant-tooltip,
         body:has(.canvas-site-menu) .ant-tooltip {
           display: none !important;
         }
@@ -585,6 +587,13 @@
           -webkit-text-fill-color: #1f2937 !important;
           opacity: 1 !important;
         }
+        .settings-model-select,
+        .settings-model-select .canvas-model-picker-text,
+        .settings-model-select[data-state="open"] .canvas-model-picker-text {
+          color: #1f2937 !important;
+          -webkit-text-fill-color: #1f2937 !important;
+          opacity: 1 !important;
+        }
         .settings-select-dropdown,
         .settings-select-dropdown [role="listbox"] {
           background: #fff !important;
@@ -613,6 +622,13 @@
         .dark .settings-grid .settings-select .ant-select-selector .ant-select-selection-item,
         .dark .settings-grid .settings-select.ant-select-open .ant-select-selector .ant-select-selection-item,
         .dark .settings-grid .settings-select.ant-select-focused .ant-select-selector .ant-select-selection-item {
+          color: #f5f5f4 !important;
+          -webkit-text-fill-color: #f5f5f4 !important;
+          opacity: 1 !important;
+        }
+        .dark .settings-model-select,
+        .dark .settings-model-select .canvas-model-picker-text,
+        .dark .settings-model-select[data-state="open"] .canvas-model-picker-text {
           color: #f5f5f4 !important;
           -webkit-text-fill-color: #f5f5f4 !important;
           opacity: 1 !important;
