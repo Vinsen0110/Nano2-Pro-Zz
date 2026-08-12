@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -11,6 +12,23 @@ import tudouProxy from "../api/tudou-proxy.js";
 const target = new URL(
     "https://api.ai-tudou.net/v1beta/models/gemini-3-pro-image-preview:streamGenerateContent?alt=sse",
 );
+const bundle = await readFile(new URL("../assets/index-B2KJ37fm.js", import.meta.url), "utf8");
+
+test("Tudou uploads temporary 2048px WebP references without changing output resolution", () => {
+    assert.match(bundle, /TUDOU_REFERENCE_MAX_EDGE=2048/);
+    assert.match(bundle, /TUDOU_REFERENCE_INITIAL_QUALITY=\.85/);
+    assert.match(bundle, /TUDOU_REFERENCE_TARGET_BYTES=10\*1024\*1024/);
+    assert.match(bundle, /TUDOU_REFERENCE_MAX_BYTES=14\*1024\*1024/);
+    assert.match(bundle, /Math\.min\(1,o\/Math\.max\(n\.width,n\.height\)\)/, "references must not be upscaled");
+    assert.match(bundle, /const l=isTudouSite\(e\),d=l\?await prepareTudouReferenceBlob\(i,n\):i/);
+    assert.match(bundle, /f\.set\("image",d,l\?"reference\.webp":t\.name\|\|"reference\.png"\)/);
+    assert.match(bundle, /imageSize:tudouResolution\(e\)\.toUpperCase\(\)/);
+    assert.doesNotMatch(
+        bundle,
+        /prepareTudouReferenceBlob\([^)]*\)[^;]*metadata|metadata[^;]*prepareTudouReferenceBlob/,
+        "the temporary request copy must not replace canvas metadata",
+    );
+});
 
 test("recognizes Tudou Gemini image endpoints and ImgBB URLs", () => {
     assert.equal(isTudouGeminiImageTarget(target), true);
@@ -57,6 +75,23 @@ test("does not fetch or rewrite non-ImgBB fileData references", async () => {
 
     assert.equal(result.converted, 0);
     assert.equal(result.payload.contents[0].parts[0].fileData.fileUri, "https://example.com/reference.jpg");
+});
+
+test("rejects ImgBB references above the 14 MB safety limit", async () => {
+    const payload = {
+        contents: [{ parts: [{ fileData: { fileUri: "https://i.ibb.co/example/too-large.webp" } }] }],
+    };
+    await assert.rejects(
+        inlineTudouGeminiReferences(target, payload, {
+            fetchImpl: async () => new Response(Uint8Array.from([1]), {
+                headers: {
+                    "Content-Length": String(14 * 1024 * 1024 + 1),
+                    "Content-Type": "image/webp",
+                },
+            }),
+        }),
+        /exceeds the 14 MB limit/,
+    );
 });
 
 test("Vercel proxy inlines one reference and submits exactly one Tudou request", async () => {
