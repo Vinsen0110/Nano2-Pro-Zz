@@ -40,7 +40,19 @@ test("the current canvas site name has stronger visual emphasis", () => {
         /className:"canvas-site-current-label","aria-live":"polite",children:\["\\u5F53\\u524D\\uFF1A",y\.jsx\("strong"/,
     );
     assert.match(indexHtml, /\.canvas-site-current-label strong \{[^}]*font-weight: 800/s);
-    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260812-34/);
+    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260812-35/);
+});
+
+test("the lower-left toolbar only shows site, minimap, and zoom controls", () => {
+    assert.match(
+        indexHtml,
+        /\.canvas-site-switch-button ~ button\[aria-label="快捷键"\][^}]*display: none !important;/s,
+    );
+    assert.match(
+        indexHtml,
+        /body:has\(\.canvas-site-switch-button:hover\)[^}]*\.ant-tooltip-inner::after \{[^}]*content: "切换站点";[^}]*font-size: 10px;/s,
+    );
+    assert.match(indexHtml, /body:has\(\.canvas-site-menu\) \.ant-tooltip \{[^}]*display: none !important;/s);
 });
 
 test("generation defaults identify the active site and use a readable select state", () => {
