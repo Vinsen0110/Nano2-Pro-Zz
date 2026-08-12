@@ -40,5 +40,17 @@ test("the current canvas site name has stronger visual emphasis", () => {
         /className:"canvas-site-current-label","aria-live":"polite",children:\["\\u5F53\\u524D\\uFF1A",y\.jsx\("strong"/,
     );
     assert.match(indexHtml, /\.canvas-site-current-label strong \{[^}]*font-weight: 800/s);
-    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260811-32/);
+    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260812-33/);
+});
+
+test("generation defaults identify the active site and use a readable select state", () => {
+    assert.match(
+        bundle,
+        /label:`\\u9ED8\\u8BA4\\u6A21\\u578B\\uFF08\$\{activeSiteChannel\(a\)\?\.name/,
+    );
+    assert.match(bundle, /popupClassName:"settings-select-dropdown"/);
+    assert.match(
+        indexHtml,
+        /\.settings-select-dropdown \.ant-select-item-option-selected[^}]*background: #eaf2ff !important;[^}]*color: #175cd3 !important;/s,
+    );
 });
