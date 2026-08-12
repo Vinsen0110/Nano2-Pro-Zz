@@ -58,7 +58,7 @@
                 };
             })();
         </script>
-      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260812-34"></script>
+      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260812-35"></script>
       <link rel="stylesheet" crossorigin href="./assets/index-DT58oPsm.css">
       <style>
         .laowu-canvas-viewport {
@@ -160,6 +160,24 @@
         .canvas-site-menu-item.is-active {
           background: #eef4ff;
           color: #3538cd;
+        }
+        .canvas-site-switch-button ~ button[aria-label="快捷键"],
+        .canvas-site-switch-button ~ span:has(+ button[aria-label="快捷键"]) {
+          display: none !important;
+        }
+        body:has(.canvas-site-switch-button:hover):not(:has(.canvas-site-menu)) .ant-tooltip-inner {
+          min-height: 24px !important;
+          padding: 3px 7px !important;
+          font-size: 0 !important;
+          line-height: 18px !important;
+        }
+        body:has(.canvas-site-switch-button:hover):not(:has(.canvas-site-menu)) .ant-tooltip-inner::after {
+          content: "切换站点";
+          font-size: 10px;
+          white-space: nowrap;
+        }
+        body:has(.canvas-site-menu) .ant-tooltip {
+          display: none !important;
         }
         .dark .canvas-site-menu {
           border-color: rgba(120, 113, 108, 0.58);
