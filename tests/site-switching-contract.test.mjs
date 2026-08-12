@@ -40,7 +40,7 @@ test("the current canvas site name has stronger visual emphasis", () => {
         /className:"canvas-site-current-label","aria-live":"polite",children:\["\\u5F53\\u524D\\uFF1A",y\.jsx\("strong"/,
     );
     assert.match(indexHtml, /\.canvas-site-current-label strong \{[^}]*font-weight: 800/s);
-    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260812-33/);
+    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260812-34/);
 });
 
 test("generation defaults identify the active site and use a readable select state", () => {
@@ -52,5 +52,9 @@ test("generation defaults identify the active site and use a readable select sta
     assert.match(
         indexHtml,
         /\.settings-select-dropdown \.ant-select-item-option-selected[^}]*background: #eaf2ff !important;[^}]*color: #175cd3 !important;/s,
+    );
+    assert.match(
+        indexHtml,
+        /\.settings-select\.ant-select-open \.ant-select-selection-item[^}]*color: #1f2937 !important;[^}]*opacity: 1 !important;/s,
     );
 });
