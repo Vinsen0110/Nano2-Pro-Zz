@@ -52,6 +52,13 @@ test("the lower-left toolbar only shows site, minimap, and zoom controls", () =>
     assert.match(indexHtml, /body:has\(\.canvas-site-menu\) \.ant-tooltip \{[^}]*display: none !important;/s);
 });
 
+test("the redundant disabled redo icon is hidden from the left toolbar", () => {
+    assert.match(
+        indexHtml,
+        /button\[aria-label="重做 Ctrl \/ Cmd \+ Shift \+ Z"\] \{[^}]*display: none !important;/s,
+    );
+});
+
 test("generation defaults identify the active site and use a readable select state", () => {
     assert.match(
         bundle,
