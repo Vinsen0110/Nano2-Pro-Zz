@@ -58,7 +58,7 @@
                 };
             })();
         </script>
-      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260812-35"></script>
+      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260812-36"></script>
       <link rel="stylesheet" crossorigin href="./assets/index-DT58oPsm.css">
       <style>
         .laowu-canvas-viewport {
@@ -165,17 +165,7 @@
         .canvas-site-switch-button ~ span:has(+ button[aria-label="快捷键"]) {
           display: none !important;
         }
-        body:has(.canvas-site-switch-button:hover):not(:has(.canvas-site-menu)) .ant-tooltip-inner {
-          min-height: 24px !important;
-          padding: 3px 7px !important;
-          font-size: 0 !important;
-          line-height: 18px !important;
-        }
-        body:has(.canvas-site-switch-button:hover):not(:has(.canvas-site-menu)) .ant-tooltip-inner::after {
-          content: "切换站点";
-          font-size: 10px;
-          white-space: nowrap;
-        }
+        body:has(.canvas-site-switch-button:hover) .ant-tooltip,
         body:has(.canvas-site-menu) .ant-tooltip {
           display: none !important;
         }
@@ -585,10 +575,11 @@
           border-radius: 10px !important;
           box-shadow: none !important;
         }
-        .settings-select .ant-select-selection-item,
-        .settings-select.ant-select-open .ant-select-selection-item,
-        .settings-select.ant-select-focused .ant-select-selection-item {
+        .settings-grid .settings-select .ant-select-selector .ant-select-selection-item,
+        .settings-grid .settings-select.ant-select-open .ant-select-selector .ant-select-selection-item,
+        .settings-grid .settings-select.ant-select-focused .ant-select-selector .ant-select-selection-item {
           color: #1f2937 !important;
+          -webkit-text-fill-color: #1f2937 !important;
           opacity: 1 !important;
         }
         .settings-select-dropdown,
@@ -615,6 +606,36 @@
         .settings-select-dropdown .ant-select-item-option-selected .ant-select-item-option-content,
         .settings-select-dropdown [role="option"][aria-selected="true"] * {
           color: inherit !important;
+        }
+        .dark .settings-grid .settings-select .ant-select-selector .ant-select-selection-item,
+        .dark .settings-grid .settings-select.ant-select-open .ant-select-selector .ant-select-selection-item,
+        .dark .settings-grid .settings-select.ant-select-focused .ant-select-selector .ant-select-selection-item {
+          color: #f5f5f4 !important;
+          -webkit-text-fill-color: #f5f5f4 !important;
+          opacity: 1 !important;
+        }
+        .dark .settings-select-dropdown,
+        .dark .settings-select-dropdown [role="listbox"],
+        .dark .settings-select-dropdown .rc-virtual-list,
+        .dark .settings-select-dropdown .rc-virtual-list-holder,
+        .dark .settings-select-dropdown .rc-virtual-list-holder-inner {
+          background: #1c1917 !important;
+          color: #e7e5e4 !important;
+        }
+        .dark .settings-select-dropdown .ant-select-item,
+        .dark .settings-select-dropdown [role="option"] {
+          background: transparent !important;
+          color: #d6d3d1 !important;
+        }
+        .dark .settings-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled),
+        .dark .settings-select-dropdown [role="option"][data-highlighted] {
+          background: #292524 !important;
+          color: #fafaf9 !important;
+        }
+        .dark .settings-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
+        .dark .settings-select-dropdown [role="option"][aria-selected="true"] {
+          background: #312e81 !important;
+          color: #eef2ff !important;
         }
         .dark .canvas-balance-button {
           border-color: rgba(120, 113, 108, 0.56) !important;
