@@ -40,10 +40,25 @@ test("the current canvas site name has stronger visual emphasis", () => {
         /className:"canvas-site-current-label","aria-live":"polite",children:\["\\u5F53\\u524D\\uFF1A",y\.jsx\("strong"/,
     );
     assert.match(indexHtml, /\.canvas-site-current-label strong \{[^}]*font-weight: 800/s);
-    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260812-36/);
+    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260812-37/);
 });
 
 test("the lower-left toolbar only shows site, minimap, and zoom controls", () => {
+    assert.doesNotMatch(
+        bundle,
+        /y\.jsx\(Eo,\{title:t\?"\\u5173\\u95ED\\u5C0F\\u5730\\u56FE":"\\u6253\\u5F00\\u5C0F\\u5730\\u56FE"/,
+        "the minimap button must not create a tooltip",
+    );
+    assert.doesNotMatch(
+        bundle,
+        /y\.jsx\(Eo,\{title:"\\u5FEB\\u6377\\u952E",children:y\.jsx\(Bt/,
+        "the lower-left shortcut control must not be rendered",
+    );
+    assert.doesNotMatch(
+        bundle,
+        /y\.jsx\(Lr,\{title:"\\u5FEB\\u6377\\u952E"/,
+        "the unreachable shortcut modal must not remain in the canvas bundle",
+    );
     assert.match(
         indexHtml,
         /\.canvas-site-switch-button ~ button\[aria-label="快捷键"\][^}]*display: none !important;/s,
@@ -53,6 +68,7 @@ test("the lower-left toolbar only shows site, minimap, and zoom controls", () =>
 });
 
 test("the redundant disabled redo icon is hidden from the left toolbar", () => {
+    assert.doesNotMatch(bundle, /id:"tool-redo"/);
     assert.match(
         indexHtml,
         /button\[aria-label="重做 Ctrl \/ Cmd \+ Shift \+ Z"\] \{[^}]*display: none !important;/s,
@@ -76,5 +92,14 @@ test("generation defaults identify the active site and use a readable select sta
     assert.match(
         indexHtml,
         /\.dark \.settings-select-dropdown[^}]*background: #1c1917 !important;[^}]*color: #e7e5e4 !important;/s,
+    );
+    assert.match(bundle, /className:"settings-model-select !h-11/);
+    assert.match(
+        indexHtml,
+        /\.settings-model-select\[data-state="open"\] \.canvas-model-picker-text[^}]*color: #1f2937 !important;[^}]*-webkit-text-fill-color: #1f2937 !important;/s,
+    );
+    assert.match(
+        indexHtml,
+        /\.dark \.settings-model-select\[data-state="open"\] \.canvas-model-picker-text[^}]*color: #f5f5f4 !important;[^}]*-webkit-text-fill-color: #f5f5f4 !important;/s,
     );
 });
