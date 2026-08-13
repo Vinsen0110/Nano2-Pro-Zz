@@ -143,9 +143,75 @@ test("Vercel proxy inlines one reference and submits exactly one Tudou request",
 
         const response = await tudouProxy.fetch(request);
         assert.equal(response.status, 200);
-        assert.equal(response.headers.get("x-tudou-references-inlined"), "1");
+        assert.equal(response.headers.get("content-type"), "text/event-stream; charset=utf-8");
+        assert.equal(response.headers.get("x-tudou-references-inlined"), "pending");
+        const responseBody = await response.text();
+        assert.match(responseBody, /^: tudou-proxy\n\n/);
         assert.equal(tudouRequests, 1);
     } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("Vercel proxy sends a heartbeat before a delayed ImgBB download completes", async () => {
+    const originalFetch = globalThis.fetch;
+    let releaseDownload;
+    let markDownloadStarted;
+    const downloadStarted = new Promise((resolve) => {
+        markDownloadStarted = resolve;
+    });
+    const downloadBlocked = new Promise((resolve) => {
+        releaseDownload = resolve;
+    });
+    let tudouRequests = 0;
+
+    globalThis.fetch = async (url) => {
+        if (String(url).startsWith("https://i.ibb.co/")) {
+            markDownloadStarted();
+            await downloadBlocked;
+            return new Response(Uint8Array.from([8, 9]), {
+                headers: { "Content-Type": "image/webp" },
+            });
+        }
+        tudouRequests += 1;
+        return new Response("data: {\"candidates\":[]}\n\n", {
+            headers: { "Content-Type": "text/event-stream" },
+        });
+    };
+
+    try {
+        const request = new Request(
+            "https://www.vinsen.top/api/tudou-proxy?path=v1beta/models/gemini-3-pro-image-preview:streamGenerateContent&alt=sse",
+            {
+                method: "POST",
+                headers: {
+                    Authorization: "Bearer test-key",
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ fileData: { fileUri: "https://i.ibb.co/example/reference.webp" } }] }],
+                    generationConfig: {
+                        responseModalities: ["TEXT", "IMAGE"],
+                        imageConfig: { aspectRatio: "1:1", imageSize: "4K" },
+                    },
+                }),
+            },
+        );
+
+        const response = await tudouProxy.fetch(request);
+        const reader = response.body.getReader();
+        const firstChunk = await reader.read();
+        assert.equal(new TextDecoder().decode(firstChunk.value), ": tudou-proxy\n\n");
+        await downloadStarted;
+        assert.equal(tudouRequests, 0, "Tudou must wait until the reference is inlined");
+
+        releaseDownload();
+        while (!(await reader.read()).done) {
+            // Drain the upstream response so the proxy finishes cleanly.
+        }
+        assert.equal(tudouRequests, 1);
+    } finally {
+        releaseDownload?.();
         globalThis.fetch = originalFetch;
     }
 });
