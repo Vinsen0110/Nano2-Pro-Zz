@@ -36,3 +36,29 @@ test("connected text generation becomes reverse prompt for an image source", () 
     );
     assert.match(bundle, /O!==Ne\.Audio&&ln\(le\.id\)/);
 });
+
+test("text-generation nodes do not expose the image-generation action", () => {
+    assert.match(
+        bundle,
+        /\.\.\.fe&&!fX\(e\)&&e\.title!=="\\u6587\\u672C\\u751F\\u6210"\?\[\{id:"generateImage"/,
+    );
+    assert.match(
+        bundle,
+        /children:\[!fX\(e\)&&e\.title!=="\\u6587\\u672C\\u751F\\u6210"\?y\.jsxs\("button",\{type:"button",className:"absolute right-3 top-3/,
+        "the inline image-generation button must also be hidden",
+    );
+});
+
+test("reverse-prompt references remain logical but are not rendered", () => {
+    assert.match(bundle, /\.\.\.isReverseText\?\{hidden:!0\}:\{\}/);
+    assert.match(
+        bundle,
+        /fromNodeId:O\.id,toNodeId:Ee\.id,hidden:!0/,
+        "the toolbar reverse-prompt action should also create a hidden reference",
+    );
+    assert.match(
+        bundle,
+        /!O\.hidden&&K&&Q&&!fX\(Q\)&&!aB\(K,B\)/,
+        "saved reverse-prompt nodes from older canvases should not reveal their incoming line",
+    );
+});

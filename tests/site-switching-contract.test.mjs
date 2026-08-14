@@ -40,7 +40,7 @@ test("the current canvas site name has stronger visual emphasis", () => {
         /className:"canvas-site-current-label","aria-live":"polite",children:\["\\u5F53\\u524D\\uFF1A",y\.jsx\("strong"/,
     );
     assert.match(indexHtml, /\.canvas-site-current-label strong \{[^}]*font-weight: 800/s);
-    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260814-45/);
+    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260814-46/);
 });
 
 test("the lower-left toolbar only shows site, minimap, and zoom controls", () => {
