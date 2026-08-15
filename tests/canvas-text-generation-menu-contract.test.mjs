@@ -129,6 +129,13 @@ test("connected image and text references are visible in generation panels", () 
     assert.match(indexHtml, /\.dark \.canvas-text-reference-item \{/);
 });
 
+test("image generation panels keep a stable width when text references are long", () => {
+    const panel = bundle.slice(bundle.indexOf("function ske("), bundle.indexOf("function fke("));
+
+    assert.match(panel, /style:\{width:v==="image"\?660:void 0,maxWidth:v==="image"\?660:void 0/);
+    assert.match(panel, /v==="image"\?\{width:"100%",maxWidth:"100%",resize:"vertical"\}:\{\}/);
+});
+
 test("the connection resolver passes generated text into an empty image node", () => {
     const extractFunction = (name) => {
         const start = bundle.indexOf(`function ${name}(`);
