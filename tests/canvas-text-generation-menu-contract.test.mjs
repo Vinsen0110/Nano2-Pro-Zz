@@ -76,3 +76,41 @@ test("reverse-prompt result cards do not render an internal divider", () => {
     assert.match(indexHtml, /border:\s*0/);
     assert.match(indexHtml, /position:\s*absolute/);
 });
+
+test("connected text can be used directly as an image prompt", () => {
+    assert.match(
+        bundle,
+        /B=v==="image"&&i\.some\(z=>z\.active&&z\.kind==="text"&&String\(z\.text\|\|""\)\.trim\(\)\)/,
+    );
+    assert.match(bundle, /\(!z&&!A&&!B\)\|\|t\|\|o\(e\.id,v,z\)/);
+    assert.match(bundle, /canSubmit:A\|\|B,credits:j/);
+    assert.match(bundle, /function V6\([\s\S]+?prompt:i\?`\$\{r\}[\s\S]*?\$\{i\}`:r/);
+});
+
+test("the connection resolver passes generated text into an empty image node", () => {
+    const extractFunction = (name) => {
+        const start = bundle.indexOf(`function ${name}(`);
+        assert.ok(start >= 0, `${name} should exist`);
+        const end = bundle.indexOf("function ", start + 10);
+        return bundle.slice(start, end);
+    };
+    const resolvePrompt = new Function(
+        "Ne",
+        ["uze", "pI", "rX", "gI", "oX", "V6", "aX", "mze", "pze", "gze", "yze"]
+            .map(extractFunction)
+            .join("\n") + "\nreturn V6;",
+    )({ Image: "image", Video: "video", Audio: "audio", Text: "text", Config: "config" });
+
+    const result = resolvePrompt(
+        "image-node",
+        [
+            { id: "text-node", type: "text", metadata: { content: "cinematic sunset over the sea" } },
+            { id: "image-node", type: "image", metadata: {} },
+        ],
+        [{ fromNodeId: "text-node", toNodeId: "image-node" }],
+        "",
+    );
+
+    assert.equal(result.prompt.trim(), "cinematic sunset over the sea");
+    assert.equal(result.textCount, 1);
+});
