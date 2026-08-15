@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const bundle = await readFile(new URL("../assets/index-B2KJ37fm.js", import.meta.url), "utf8");
+const indexHtml = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
 test("both existing canvas create menus expose text generation", () => {
     const connectionMenu = bundle.slice(bundle.indexOf("function zke("), bundle.indexOf("function eB("));
@@ -68,4 +69,10 @@ test("reverse-prompt references remain connected and visible", () => {
     assert.match(bundle, /return!!\(K&&Q&&!aB\(K,B\)&&!aB\(Q,B\)/);
     assert.doesNotMatch(bundle, /!O\.hidden&&K&&Q/);
     assert.doesNotMatch(bundle, /!fX\(Q\)&&!aB\(K,B\)/);
+});
+
+test("reverse-prompt result cards do not render an internal divider", () => {
+    assert.match(indexHtml, /div:has\(> \[aria-label="反推分析结果"\]\) > \.border-b/);
+    assert.match(indexHtml, /border:\s*0/);
+    assert.match(indexHtml, /position:\s*absolute/);
 });

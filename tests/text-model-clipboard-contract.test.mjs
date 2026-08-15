@@ -133,8 +133,9 @@ test("text routing has no Responses endpoint", () => {
 test("large text reference images are compressed only in the request copy", async () => {
     const start = bundle.indexOf("const TEXT_REFERENCE_MAX_EDGE");
     assert.ok(start >= 0, "temporary text reference compressor should exist");
-    const compressor = bundle.slice(start);
+    const compressor = bundle.slice(start, bundle.indexOf("assertTudouWebRequestSize=", start));
     let disposed = false;
+    let fetchedBlob = new Blob([new Uint8Array(8 * 1024 * 1024)], { type: "image/png" });
     const encodeCalls = [];
     const uploads = [];
     const makeCompressor = new Function(
@@ -145,12 +146,13 @@ test("large text reference images are compressed only in the request copy", asyn
         "encodeTudouReferenceWebp",
         "Ln",
         "isImgBbReferenceUrl",
+        "isTudouSite",
         `${compressor};return prepareTextChatMessages;`,
     );
     const compressMessages = makeCompressor(
         async () => ({
             ok: true,
-            blob: async () => ({ size: 8 * 1024 * 1024, type: "image/png" }),
+            blob: async () => fetchedBlob,
         }),
         async (blob) => `data:image/webp;base64,${"A".repeat(Math.ceil(blob.size * 4 / 3))}`,
         (signal) => {
@@ -179,6 +181,7 @@ test("large text reference images are compressed only in the request copy", asyn
             },
         },
         (url) => String(url).startsWith("https://i.ibb.co/"),
+        (config) => config?.provider === "tudou",
     );
     const originalUrl = `data:application/octet-stream;base64,${"A".repeat(8 * 1024 * 1024)}`;
     const source = [{
@@ -205,6 +208,20 @@ test("large text reference images are compressed only in the request copy", asyn
     assert.equal(uploads[0].url, "https://api.imgbb.com/1/upload");
     assert.ok(uploads[0].form.get("image").size <= 2 * 1024 * 1024);
     assert.ok(new Blob([JSON.stringify({ messages: hosted })]).size < 1024);
+
+    fetchedBlob = new Blob([new Uint8Array(512 * 1024)], { type: "image/webp" });
+    const tudouHosted = await compressMessages(source, {
+        provider: "tudou",
+        imgbbApiKey: "test-imgbb-key",
+    });
+    assert.equal(tudouHosted[0].content[1].image_url.url, "https://i.ibb.co/example/text-reference.webp");
+    assert.equal(uploads.length, 2, "Tudou should host local references even when the temporary copy is small");
+    assert.equal(uploads[1].form.get("image").size, 512 * 1024);
+});
+
+test("oversized Tudou text requests no longer tell web users to switch apps", () => {
+    assert.match(bundle, /assertTudouWebRequestSize=\(e,t\)=>/);
+    assert.match(bundle, /ImgBB API Key/);
 });
 
 test("Tudou proxy forwards Chat Completions unchanged", async () => {
