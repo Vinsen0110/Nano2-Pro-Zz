@@ -40,7 +40,7 @@ test("the current canvas site name has stronger visual emphasis", () => {
         /className:"canvas-site-current-label","aria-live":"polite",children:\["\\u5F53\\u524D\\uFF1A",y\.jsx\("strong"/,
     );
     assert.match(indexHtml, /\.canvas-site-current-label strong \{[^}]*font-weight: 800/s);
-    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260814-46/);
+    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260815-47/);
 });
 
 test("the lower-left toolbar only shows site, minimap, and zoom controls", () => {
@@ -78,8 +78,11 @@ test("the redundant disabled redo icon is hidden from the left toolbar", () => {
 test("generation defaults identify the active site and use a readable select state", () => {
     assert.match(
         bundle,
-        /label:`\\u9ED8\\u8BA4\\u6A21\\u578B\\uFF08\$\{activeSiteChannel\(a\)\?\.name/,
+        /label:"\\u9ED8\\u8BA4\\u751F\\u56FE\\u6A21\\u578B\\uFF08"\+\(activeSiteChannel\(a\)\?\.name/,
     );
+    assert.match(bundle, /className:"generation-settings-sections"/);
+    assert.match(bundle, /children:"\\u751F\\u56FE\\u6A21\\u578B\\u8BBE\\u7F6E"/);
+    assert.match(bundle, /children:"\\u6587\\u672C\\u6A21\\u578B\\u8BBE\\u7F6E"/);
     assert.match(bundle, /popupClassName:"settings-select-dropdown"/);
     assert.match(
         indexHtml,
