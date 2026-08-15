@@ -80,7 +80,7 @@ test("reverse-prompt result cards do not render an internal divider", () => {
 test("connected text can be used directly as an image prompt", () => {
     assert.match(
         bundle,
-        /B=v==="image"&&i\.some\(z=>z\.active&&z\.kind==="text"&&String\(z\.text\|\|""\)\.trim\(\)\)/,
+        /D=v==="image"\?i\.filter\(z=>z\.active&&z\.kind==="text"&&String\(z\.text\|\|""\)\.trim\(\)\):\[\],B=D\.length>0/,
     );
     assert.match(bundle, /\(!z&&!A&&!B\)\|\|t\|\|o\(e\.id,v,z\)/);
     assert.match(bundle, /canSubmit:A\|\|B,credits:j/);
@@ -105,6 +105,28 @@ test("the reverse-prompt preset requests structured bilingual visual detail", ()
         assert.match(preset, new RegExp(section));
     }
     assert.match(bundle, /,bg=W0;function sanitizeCanvasNodeClone/);
+});
+
+test("connected image and text references are visible in generation panels", () => {
+    const panel = bundle.slice(bundle.indexOf("function ske("), bundle.indexOf("function fke("));
+
+    assert.match(
+        panel,
+        /T=\(v==="image"\|\|v==="text"\)\?i\.filter\(z=>z\.active&&z\.kind==="image"&&z\.previewUrl\):\[\]/,
+        "text panels should keep active image references for their thumbnail strip",
+    );
+    assert.match(panel, /references:T,nodeId:e\.id,onReferenceOrderChange:l/);
+    assert.match(panel, /referenceImages\.length\?y\.jsx\(dke,\{nodeId:referenceNodeId/);
+    assert.match(
+        panel,
+        /D=v==="image"\?i\.filter\(z=>z\.active&&z\.kind==="text"&&String\(z\.text\|\|""\)\.trim\(\)\):\[\]/,
+        "image panels should collect active upstream text",
+    );
+    assert.match(panel, /D\.length\?y\.jsx\(CanvasTextReferenceStrip/);
+    assert.match(panel, /data-canvas-text-references/);
+    assert.match(panel, /canvas-text-reference-preview/);
+    assert.match(indexHtml, /\.canvas-text-reference-strip \{/);
+    assert.match(indexHtml, /\.dark \.canvas-text-reference-item \{/);
 });
 
 test("the connection resolver passes generated text into an empty image node", () => {
