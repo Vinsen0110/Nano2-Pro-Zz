@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import tudouProxy from "../api/tudou-proxy.js";
+
 const bundle = await readFile(new URL("../assets/index-B2KJ37fm.js", import.meta.url), "utf8");
 
 test("each site exposes exactly one supported text model", () => {
@@ -35,19 +37,23 @@ test("settings expose the active site's global default text model", () => {
     assert.match(bundle, /onChange:\$=>h\(\{textModel:\$\}\)/);
 });
 
-test("Apilio text generation uses Chat Completions messages", async () => {
+test("Apilio and Tudou text generation use Chat Completions messages", async () => {
     const start = bundle.indexOf("function chatCompletionMessages");
-    const end = bundle.indexOf("async function iW", start);
-    assert.ok(start >= 0 && end > start, "Apilio Chat Completions adapter should exist");
+    const end = bundle.indexOf("function SA", start);
+    assert.ok(start >= 0 && end > start, "Chat Completions adapter should exist");
 
     const adapter = bundle.slice(start, end);
     const requests = [];
     const makeRequest = new Function(
         "fetch",
         "Gy",
+        "xA",
+        "isTudouSite",
         "wA",
         "aW",
         "AL",
+        "prepareTextChatMessages",
+        "assertTudouWebRequestSize",
         `${adapter};return requestChatCompletions;`,
     );
     const request = makeRequest(
@@ -58,11 +64,15 @@ test("Apilio text generation uses Chat Completions messages", async () => {
             }), { status: 200, headers: { "Content-Type": "application/json" } });
         },
         (baseUrl, path) => `${baseUrl.replace(/\/$/, "")}/v1${path}`,
+        (_config, path) => `https://www.vinsen.top/api/tudou/v1${path}`,
+        (config) => config.provider === "tudou",
         () => ({ Authorization: "Bearer test-key", "Content-Type": "application/json" }),
         async () => "request failed",
         (payload) => {
             if (payload?.error?.message) throw new Error(payload.error.message);
         },
+        async (messages) => messages,
+        () => {},
     );
 
     const progress = [];
@@ -93,11 +103,125 @@ test("Apilio text generation uses Chat Completions messages", async () => {
     assert.equal("input" in body, false);
     assert.equal(result.content, "反推结果");
     assert.deepEqual(progress, ["反推结果"]);
+
+    await request(
+        {
+            provider: "tudou",
+            baseUrl: "https://api.ai-tudou.net",
+            apiKey: "test-key",
+            model: "gpt-5.5",
+        },
+        [{ role: "user", content: "生成一段文字" }],
+    );
+    assert.equal(requests.length, 2);
+    assert.equal(requests[1].url, "https://www.vinsen.top/api/tudou/v1/chat/completions");
+    const tudouBody = JSON.parse(requests[1].init.body);
+    assert.equal(tudouBody.model, "gpt-5.5");
+    assert.deepEqual(tudouBody.messages, [{ role: "user", content: "生成一段文字" }]);
+    assert.equal(tudouBody.stream, false);
+    assert.equal(requests[1].init.headers.Accept, "application/json");
 });
 
-test("text routing keeps Tudou on Responses while Apilio uses Chat Completions", () => {
-    assert.match(bundle, /isApilioSite\(o\)\?requestChatCompletions\(o,tW\(o,t\),n,r\):iW\(o,/);
-    assert.match(bundle, /fetch\(xA\(e,"\/responses"\)/);
+test("text routing has no Responses endpoint", () => {
+    assert.match(bundle, /await requestChatCompletions\(o,tW\(o,t\),n,r\)/);
+    assert.match(bundle, /isTudouSite\(e\)\?xA\(e,"\/chat\/completions"\):Gy\(e\.baseUrl,"\/chat\/completions"\)/);
+    assert.doesNotMatch(bundle, /xA\(e,"\/responses"\)/);
+    assert.doesNotMatch(bundle, /fetch\([^)]*"\/responses"/);
+});
+
+test("large text reference images are compressed only in the request copy", async () => {
+    const start = bundle.indexOf("const TEXT_REFERENCE_MAX_EDGE");
+    assert.ok(start >= 0, "temporary text reference compressor should exist");
+    const compressor = bundle.slice(start);
+    let disposed = false;
+    const encodeCalls = [];
+    const makeCompressor = new Function(
+        "fetch",
+        "P$e",
+        "throwIfTudouReferenceAborted",
+        "decodeTudouReferenceBlob",
+        "encodeTudouReferenceWebp",
+        `${compressor};return prepareTextChatMessages;`,
+    );
+    const compressMessages = makeCompressor(
+        async () => ({
+            ok: true,
+            blob: async () => ({ size: 8 * 1024 * 1024, type: "image/png" }),
+        }),
+        async (blob) => `data:image/webp;base64,${"A".repeat(Math.ceil(blob.size * 4 / 3))}`,
+        (signal) => {
+            if (signal?.aborted) throw new Error("aborted");
+        },
+        async () => ({
+            image: {},
+            width: 4096,
+            height: 3072,
+            dispose: () => { disposed = true; },
+        }),
+        async (_image, width, height, quality) => {
+            encodeCalls.push({ width, height, quality });
+            return {
+                size: Math.ceil(width * height * quality * 0.48),
+                type: "image/webp",
+            };
+        },
+    );
+    const originalUrl = `data:image/png;base64,${"A".repeat(8 * 1024 * 1024)}`;
+    const source = [{
+        role: "user",
+        content: [
+            { type: "text", text: "反推这张图" },
+            { type: "image_url", image_url: { url: originalUrl } },
+        ],
+    }];
+
+    const prepared = await compressMessages(source);
+    const preparedUrl = prepared[0].content[1].image_url.url;
+    assert.equal(source[0].content[1].image_url.url, originalUrl);
+    assert.match(preparedUrl, /^data:image\/webp;base64,/);
+    assert.ok(preparedUrl.length < originalUrl.length / 3);
+    assert.ok(new Blob([JSON.stringify({ messages: prepared })]).size < 3 * 1024 * 1024);
+    assert.ok(encodeCalls.every(({ width, height }) => Math.max(width, height) <= 2048));
+    assert.equal(disposed, true);
+});
+
+test("Tudou proxy forwards Chat Completions unchanged", async () => {
+    const originalFetch = globalThis.fetch;
+    const forwarded = [];
+    globalThis.fetch = async (url, init) => {
+        forwarded.push({ url: String(url), init });
+        return new Response(JSON.stringify({
+            choices: [{ message: { content: "土豆返回" } }],
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+    };
+
+    try {
+        const request = new Request(
+            "https://www.vinsen.top/api/tudou-proxy?path=v1/chat/completions",
+            {
+                method: "POST",
+                headers: {
+                    Authorization: "Bearer test-key",
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    model: "gpt-5.5",
+                    messages: [{ role: "user", content: "测试" }],
+                    stream: false,
+                }),
+            },
+        );
+        const response = await tudouProxy.fetch(request);
+        assert.equal(response.status, 200);
+        assert.equal(forwarded.length, 1);
+        assert.equal(forwarded[0].url, "https://api.ai-tudou.net/v1/chat/completions");
+        const body = JSON.parse(new TextDecoder().decode(forwarded[0].init.body));
+        assert.deepEqual(body.messages, [{ role: "user", content: "测试" }]);
+        assert.equal(body.stream, false);
+        assert.equal(await response.json().then((value) => value.choices[0].message.content), "土豆返回");
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
 });
 
 test("text requests reject a stale model from another site", () => {
