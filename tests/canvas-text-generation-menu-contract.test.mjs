@@ -87,6 +87,26 @@ test("connected text can be used directly as an image prompt", () => {
     assert.match(bundle, /function V6\([\s\S]+?prompt:i\?`\$\{r\}[\s\S]*?\$\{i\}`:r/);
 });
 
+test("the reverse-prompt preset requests structured bilingual visual detail", () => {
+    const match = bundle.match(/const W0=\x60([\s\S]*?)\x60;/);
+    assert.ok(match, "the shared reverse-prompt preset should exist");
+    const preset = JSON.parse('"' + match[1].replaceAll("\n", "\\n") + '"');
+
+    for (const section of [
+        "主体与造型",
+        "构图与机位",
+        "材质与工艺",
+        "光源与阴影",
+        "场景与空间",
+        "【中文提示词】",
+        "【English Prompt】",
+        "不要输出分析步骤",
+    ]) {
+        assert.match(preset, new RegExp(section));
+    }
+    assert.match(bundle, /,bg=W0;function sanitizeCanvasNodeClone/);
+});
+
 test("the connection resolver passes generated text into an empty image node", () => {
     const extractFunction = (name) => {
         const start = bundle.indexOf(`function ${name}(`);
