@@ -124,6 +124,7 @@ test("Apilio and Tudou text generation use Chat Completions messages", async () 
 
 test("text routing has no Responses endpoint", () => {
     assert.match(bundle, /await requestChatCompletions\(o,tW\(o,t\),n,r\)/);
+    assert.match(bundle, /o\.apiFormat==="gemini"&&!isTudouSite\(o\)/);
     assert.match(bundle, /isTudouSite\(e\)\?xA\(e,"\/chat\/completions"\):Gy\(e\.baseUrl,"\/chat\/completions"\)/);
     assert.doesNotMatch(bundle, /xA\(e,"\/responses"\)/);
     assert.doesNotMatch(bundle, /fetch\([^)]*"\/responses"/);
@@ -135,12 +136,15 @@ test("large text reference images are compressed only in the request copy", asyn
     const compressor = bundle.slice(start);
     let disposed = false;
     const encodeCalls = [];
+    const uploads = [];
     const makeCompressor = new Function(
         "fetch",
         "P$e",
         "throwIfTudouReferenceAborted",
         "decodeTudouReferenceBlob",
         "encodeTudouReferenceWebp",
+        "Ln",
+        "isImgBbReferenceUrl",
         `${compressor};return prepareTextChatMessages;`,
     );
     const compressMessages = makeCompressor(
@@ -160,13 +164,23 @@ test("large text reference images are compressed only in the request copy", asyn
         }),
         async (_image, width, height, quality) => {
             encodeCalls.push({ width, height, quality });
-            return {
-                size: Math.ceil(width * height * quality * 0.48),
-                type: "image/webp",
-            };
+            const size = Math.ceil(width * height * quality * 0.48);
+            return new Blob([new Uint8Array(size)], { type: "image/webp" });
         },
+        {
+            post: async (url, form) => {
+                uploads.push({ url, form });
+                return {
+                    data: {
+                        success: true,
+                        data: { url: "https://i.ibb.co/example/text-reference.webp" },
+                    },
+                };
+            },
+        },
+        (url) => String(url).startsWith("https://i.ibb.co/"),
     );
-    const originalUrl = `data:image/png;base64,${"A".repeat(8 * 1024 * 1024)}`;
+    const originalUrl = `data:application/octet-stream;base64,${"A".repeat(8 * 1024 * 1024)}`;
     const source = [{
         role: "user",
         content: [
@@ -183,6 +197,14 @@ test("large text reference images are compressed only in the request copy", asyn
     assert.ok(new Blob([JSON.stringify({ messages: prepared })]).size < 3 * 1024 * 1024);
     assert.ok(encodeCalls.every(({ width, height }) => Math.max(width, height) <= 2048));
     assert.equal(disposed, true);
+
+    const hosted = await compressMessages(source, { imgbbApiKey: "test-imgbb-key" });
+    assert.equal(hosted[0].content[1].image_url.url, "https://i.ibb.co/example/text-reference.webp");
+    assert.equal(source[0].content[1].image_url.url, originalUrl);
+    assert.equal(uploads.length, 1);
+    assert.equal(uploads[0].url, "https://api.imgbb.com/1/upload");
+    assert.ok(uploads[0].form.get("image").size <= 2 * 1024 * 1024);
+    assert.ok(new Blob([JSON.stringify({ messages: hosted })]).size < 1024);
 });
 
 test("Tudou proxy forwards Chat Completions unchanged", async () => {
