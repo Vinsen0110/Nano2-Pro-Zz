@@ -201,9 +201,9 @@ test("RH is a fully isolated third site in the compiled app", () => {
     assert.doesNotMatch(bundle, /n\.slice\(0,10\)/);
     assert.match(bundle, /RH \\u6682\\u672A\\u914D\\u7F6E\\u6587\\u672C\\u6A21\\u578B/);
     assert.match(bundle, /if\(isRunningHubSite\(K\)\)\{const Q=await fetchRunningHubAccount\(K\)/);
-    assert.match(bundle, /setRhBalanceCurrency\(String\(Q\?\.currency\|\|""\)\.trim\(\)\.toUpperCase\(\)\)/);
     assert.match(bundle, /Ba=!isTudouSite\(balanceSite\)&&!isRunningHubSite\(balanceSite\)/);
-    assert.match(bundle, /isRunningHubSite\(balanceSite\)\?`\$\{qke\(be\)\} \$\{rhBalanceCurrency\|\|""\}`\.trim\(\)/);
+    assert.match(bundle, /isRunningHubSite\(balanceSite\)\?`\$\{qke\(be\)\} \$`/);
+    assert.doesNotMatch(bundle, /rhBalanceCurrency|setRhBalanceCurrency/);
     assert.match(bundle, /if\(isTudouSite\(le\)\|\|isRunningHubSite\(le\)\)\{Wt\(!1\),Rt\(null\),Lt\(""\);return\}/);
     assert.doesNotMatch(bundle, /queryRunningHubAccount|rhAccountLoading|rh-account-/);
     assert.match(bundle, /if\(r\)return null;const o=/, "RH price must stay hidden");
