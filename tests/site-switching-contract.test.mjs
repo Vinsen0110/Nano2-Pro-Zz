@@ -9,7 +9,7 @@ test("settings site tabs only change the site being edited", () => {
     assert.match(bundle, /\[configSiteId,setConfigSiteId\]=c\.useState\(null\)/);
     assert.match(
         bundle,
-        /k=\$=>\{setEditingKeyId\(null\),setKeyMenuOpen\(!1\),setRhAccount\(null\),setConfigSiteId\(\$\)\}/,
+        /k=\$=>\{setEditingKeyId\(null\),setKeyMenuOpen\(!1\),setConfigSiteId\(\$\)\}/,
     );
     assert.doesNotMatch(
         bundle,
@@ -40,7 +40,7 @@ test("the current canvas site name has stronger visual emphasis", () => {
         /className:"canvas-site-current-label","aria-live":"polite",children:\["\\u5F53\\u524D\\uFF1A",y\.jsx\("strong"/,
     );
     assert.match(indexHtml, /\.canvas-site-current-label strong \{[^}]*font-weight: 800/s);
-    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260817-55/);
+    assert.match(indexHtml, /index-B2KJ37fm\.js\?v=20260817-56/);
 });
 
 test("the lower-left toolbar only shows site, minimap, and zoom controls", () => {
