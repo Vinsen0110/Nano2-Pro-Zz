@@ -1,8 +1,8 @@
 export const RUNNINGHUB_ORIGIN = "https://www.runninghub.ai";
 export const RUNNINGHUB_SITE_ID = "runninghub";
 export const RUNNINGHUB_SITE_NAME = "RH";
-export const RUNNINGHUB_SITE_MODELS = ["nano-banana-pro"];
-export const RUNNINGHUB_IMAGE_MODELS = ["nano-banana-pro"];
+export const RUNNINGHUB_SITE_MODELS = ["nano-banana-pro", "gpt-image-2"];
+export const RUNNINGHUB_IMAGE_MODELS = ["nano-banana-pro", "gpt-image-2"];
 export const RUNNINGHUB_TEXT_MODELS = [];
 
 export const RUNNINGHUB_ASPECT_RATIOS = [
@@ -18,6 +18,36 @@ export const RUNNINGHUB_ASPECT_RATIOS = [
     "21:9",
 ];
 
+export const RUNNINGHUB_GPT_IMAGE_ASPECT_RATIOS = [
+    "1:1",
+    "1:2",
+    "2:1",
+    "1:3",
+    "3:1",
+    "2:3",
+    "3:2",
+    "3:4",
+    "4:3",
+    "4:5",
+    "5:4",
+    "9:16",
+    "16:9",
+    "21:9",
+    "9:21",
+];
+
+const GPT_IMAGE_TEXT_PRICES = {
+    low: { "1k": 0.009, "2k": 0.018, "4k": 0.027 },
+    medium: { "1k": 0.054, "2k": 0.108, "4k": 0.162 },
+    high: { "1k": 0.198, "2k": 0.396, "4k": 0.594 },
+};
+
+const GPT_IMAGE_REFERENCE_PRICES = {
+    low: { "1k": 0.027, "2k": 0.054, "4k": 0.081 },
+    medium: { "1k": 0.054, "2k": 0.108, "4k": 0.162 },
+    high: { "1k": 0.198, "2k": 0.396, "4k": 0.594 },
+};
+
 const REFERENCE_TARGET_BYTES = 10 * 1024 * 1024;
 const REFERENCE_MAX_EDGE = 2048;
 const TASK_TIMEOUT_MS = 5 * 60 * 1000;
@@ -28,32 +58,68 @@ export function isRunningHubSite(config) {
         || String(config?.baseUrl || "").includes("runninghub.ai");
 }
 
+export function runningHubImageModel(config) {
+    const value = String(config?.model || config?.imageModel || "nano-banana-pro")
+        .trim()
+        .toLowerCase()
+        .split("::")
+        .at(-1);
+    return value === "gpt-image-2" || value === "gpt-image-2-all"
+        ? "gpt-image-2"
+        : "nano-banana-pro";
+}
+
 export function runningHubResolution(config) {
-    const value = String(config?.quality || "4k").trim().toLowerCase();
+    const value = String(config?.quality || "auto").trim().toLowerCase();
     if (["1k", "2k", "4k"].includes(value)) return value;
     if (["low", "standard"].includes(value)) return "1k";
     if (["medium", "hd"].includes(value)) return "2k";
-    return "4k";
+    if (value === "high") return "4k";
+    return "1k";
+}
+
+export function runningHubQuality(config) {
+    const value = String(config?.gptImageQuality || "medium").trim().toLowerCase();
+    return ["low", "medium", "high"].includes(value) ? value : "medium";
 }
 
 export function runningHubAspectRatio(config) {
     const value = String(config?.size || "auto").trim().toLowerCase();
-    if (RUNNINGHUB_ASPECT_RATIOS.includes(value)) return value;
+    const ratios = runningHubImageModel(config) === "gpt-image-2"
+        ? RUNNINGHUB_GPT_IMAGE_ASPECT_RATIOS
+        : RUNNINGHUB_ASPECT_RATIOS;
+    if (ratios.includes(value)) return value;
     return undefined;
+}
+
+export function runningHubImagePrice(config, hasReferences = false) {
+    const resolution = runningHubResolution(config);
+    if (runningHubImageModel(config) === "nano-banana-pro") {
+        return resolution === "4k" ? 0.07 : 0.06;
+    }
+    const prices = hasReferences ? GPT_IMAGE_REFERENCE_PRICES : GPT_IMAGE_TEXT_PRICES;
+    return prices[runningHubQuality(config)][resolution];
 }
 
 export function runningHubImageRequestSpec(config, prompt, imageUrls = []) {
     const hasReferences = imageUrls.length > 0;
     const aspectRatio = runningHubAspectRatio(config);
+    const model = runningHubImageModel(config);
+    const isGptImage = model === "gpt-image-2";
     return {
-        endpoint: hasReferences
-            ? "/openapi/v2/rhart-image-n-pro/edit"
-            : "/openapi/v2/rhart-image-n-pro/text-to-image",
+        endpoint: isGptImage
+            ? hasReferences
+                ? "/openapi/v2/rhart-image-g-2-official/image-to-image"
+                : "/openapi/v2/rhart-image-g-2-official/text-to-image"
+            : hasReferences
+                ? "/openapi/v2/rhart-image-n-pro/edit"
+                : "/openapi/v2/rhart-image-n-pro/text-to-image",
         body: {
             ...(hasReferences ? { imageUrls } : {}),
             prompt: String(prompt || "").trim(),
             ...(aspectRatio ? { aspectRatio } : {}),
             resolution: runningHubResolution(config),
+            ...(isGptImage ? { quality: runningHubQuality(config) } : {}),
         },
     };
 }

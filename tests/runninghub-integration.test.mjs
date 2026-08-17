@@ -3,11 +3,15 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
+    RUNNINGHUB_IMAGE_MODELS,
     RUNNINGHUB_ORIGIN,
+    RUNNINGHUB_SITE_MODELS,
     fetchRunningHubAccount,
     runRunningHubImageGeneration,
     runningHubErrorMessage,
+    runningHubImagePrice,
     runningHubImageRequestSpec,
+    runningHubResolution,
     uploadRunningHubReferenceBlob,
 } from "../runninghub-api.js";
 
@@ -21,7 +25,7 @@ function jsonResponse(payload, status = 200) {
     });
 }
 
-test("RH request mapping keeps 4K lowercase and handles Auto by request type", () => {
+test("RH Nano Banana Pro request mapping keeps 4K lowercase", () => {
     const text = runningHubImageRequestSpec({ quality: "4K", size: "auto" }, "test");
     assert.equal(text.endpoint, "/openapi/v2/rhart-image-n-pro/text-to-image");
     assert.deepEqual(text.body, {
@@ -40,6 +44,80 @@ test("RH request mapping keeps 4K lowercase and handles Auto by request type", (
         prompt: "edit",
         resolution: "4k",
     });
+});
+
+test("RH exposes both image models and maps Auto to the provider's legal 1K value", () => {
+    assert.deepEqual(RUNNINGHUB_SITE_MODELS, ["nano-banana-pro", "gpt-image-2"]);
+    assert.deepEqual(RUNNINGHUB_IMAGE_MODELS, ["nano-banana-pro", "gpt-image-2"]);
+    assert.equal(runningHubResolution({ quality: "auto" }), "1k");
+
+    const request = runningHubImageRequestSpec(
+        { model: "nano-banana-pro", quality: "auto", size: "auto" },
+        "draw",
+    );
+    assert.equal(request.body.resolution, "1k");
+    assert.equal(request.body.aspectRatio, undefined);
+});
+
+test("RH Nano Banana Pro prices Auto, 1K and 2K at $0.06 and 4K at $0.07", () => {
+    for (const quality of ["auto", "1k", "2k"]) {
+        assert.equal(runningHubImagePrice({ model: "nano-banana-pro", quality }, false), 0.06);
+        assert.equal(runningHubImagePrice({ model: "nano-banana-pro", quality }, true), 0.06);
+    }
+    assert.equal(runningHubImagePrice({ model: "nano-banana-pro", quality: "4k" }, false), 0.07);
+    assert.equal(runningHubImagePrice({ model: "nano-banana-pro", quality: "4k" }, true), 0.07);
+});
+
+test("RH GPT Image 2 routes text and reference generations to stable official endpoints", () => {
+    const text = runningHubImageRequestSpec({
+        model: "gpt-image-2",
+        quality: "2K",
+        size: "1:2",
+        gptImageQuality: "low",
+    }, "draw");
+    assert.equal(text.endpoint, "/openapi/v2/rhart-image-g-2-official/text-to-image");
+    assert.deepEqual(text.body, {
+        prompt: "draw",
+        aspectRatio: "1:2",
+        resolution: "2k",
+        quality: "low",
+    });
+
+    const edit = runningHubImageRequestSpec({
+        model: "runninghub::gpt-image-2",
+        quality: "4K",
+        size: "9:21",
+        gptImageQuality: "high",
+    }, "edit", ["https://example.com/reference.png"]);
+    assert.equal(edit.endpoint, "/openapi/v2/rhart-image-g-2-official/image-to-image");
+    assert.deepEqual(edit.body, {
+        imageUrls: ["https://example.com/reference.png"],
+        prompt: "edit",
+        aspectRatio: "9:21",
+        resolution: "4k",
+        quality: "high",
+    });
+});
+
+test("RH GPT Image 2 prices match text-to-image and image-to-image tables", () => {
+    const textPrices = {
+        low: { "1k": 0.009, "2k": 0.018, "4k": 0.027 },
+        medium: { "1k": 0.054, "2k": 0.108, "4k": 0.162 },
+        high: { "1k": 0.198, "2k": 0.396, "4k": 0.594 },
+    };
+    const referencePrices = {
+        low: { "1k": 0.027, "2k": 0.054, "4k": 0.081 },
+        medium: { "1k": 0.054, "2k": 0.108, "4k": 0.162 },
+        high: { "1k": 0.198, "2k": 0.396, "4k": 0.594 },
+    };
+
+    for (const [quality, resolutions] of Object.entries(textPrices)) {
+        for (const [resolution, price] of Object.entries(resolutions)) {
+            const config = { model: "gpt-image-2", quality: resolution, gptImageQuality: quality };
+            assert.equal(runningHubImagePrice(config, false), price);
+            assert.equal(runningHubImagePrice(config, true), referencePrices[quality][resolution]);
+        }
+    }
 });
 
 test("RH submits one generation task and only polls that task", async () => {
@@ -206,7 +284,12 @@ test("RH is a fully isolated third site in the compiled app", () => {
     assert.doesNotMatch(bundle, /rhBalanceCurrency|setRhBalanceCurrency/);
     assert.match(bundle, /if\(isTudouSite\(le\)\|\|isRunningHubSite\(le\)\)\{Wt\(!1\),Rt\(null\),Lt\(""\);return\}/);
     assert.doesNotMatch(bundle, /queryRunningHubAccount|rhAccountLoading|rh-account-/);
-    assert.match(bundle, /if\(r\)return null;const o=/, "RH price must stay hidden");
+    assert.match(bundle, /runningHubImagePrice\(e,t\)/, "RH price must be visible");
+    assert.match(bundle, /pke\(h,n\.imageCount>0\)/, "config nodes must use reference pricing");
+    assert.match(bundle, /pke\(w,i\.some\(z=>z\.active&&z\.kind==="image"&&z\.previewUrl\)\)/);
+    assert.match(bundle, /\["tudou","runninghub"\]\.includes\(activeSiteChannel\(a\)\?\.provider\)/);
+    assert.match(bundle, /isRunningHubSite\(bd\(t,t\.model\)\)/, "RH GPT controls must appear on canvas");
+    assert.doesNotMatch(bundle, /if\(r\)return null;const o=/);
     assert.doesNotMatch(indexHtml, /\.rh-account-/);
     assert.match(indexHtml, /\.rh-text-model-empty/);
 });
