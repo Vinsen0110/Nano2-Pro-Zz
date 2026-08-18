@@ -11,7 +11,8 @@ test("Apollo exposes GPT Image 2 as an image model", () => {
 
 test("Apollo GPT Image 2 keeps request model and resolution mapping isolated", () => {
     assert.match(bundle, /function isApolloGptImageModel\(e\)/);
-    assert.match(bundle, /model:"gpt-image-2",prompt:Zq\(e,t\),size:apolloGptImageSize\(e\),quality:tudouQuality\(e\)/);
+    assert.match(bundle, /function apolloGptImageRequestModel\(e\)\{const t=t4e\(e\?\.quality\);return t==="4k"\?"gpt-image-2-4k":t==="2k"\?"gpt-image-2-2k":"gpt-image-2"\}/);
+    assert.match(bundle, /model:apolloGptImageRequestModel\(e\),prompt:Zq\(e,t\),size:apolloGptImageSize\(e\),quality:tudouQuality\(e\)/);
     assert.match(bundle, /t==="auto"\?816:t==="1k"\?1024:t==="2k"\?2048:2880/);
     assert.match(bundle, /Math\.sqrt\(i\*a\).*Math\.sqrt\(i\/a\)/);
     assert.match(bundle, /for\(;m\*h>TMe;\).*for\(;m\*h<MMe;\)/);
@@ -37,7 +38,7 @@ test("Apollo GPT Image 2 always submits async generations and edits", () => {
 });
 
 test("Apollo GPT Image 2 edits send the documented multipart fields", () => {
-    assert.match(bundle, /r\.set\("model","gpt-image-2"\),r\.set\("prompt",Zq\(e,t\)\),r\.set\("size",apolloGptImageSize\(e\)\),r\.set\("quality",tudouQuality\(e\)\)/);
+    assert.match(bundle, /r\.set\("model",apolloGptImageRequestModel\(e\)\),r\.set\("prompt",Zq\(e,t\)\),r\.set\("size",apolloGptImageSize\(e\)\),r\.set\("quality",tudouQuality\(e\)\)/);
     assert.match(bundle, /isApolloGptImageModel\(a\.model\).*nM\(\{\.\.\.h,dataUrl:await vh\(h\)\}\)/);
 });
 
@@ -53,6 +54,6 @@ test("Apollo keeps billing metadata per key and never changes the request model"
     assert.match(bundle, /\(\?:普通\|default\).*\(\?:优质\|premium\|official\).*\?"label"/);
     assert.match(bundle, /function assertApolloNanoBilling\(e\)/);
     assert.match(bundle, /effectiveApolloBillingGroup\(e\.apolloBillingKey\)===APOLLO_BILLING_GROUP_DEFAULT/);
-    assert.match(bundle, /model:"gpt-image-2"/, "billing must not rewrite the request model");
+    assert.match(bundle, /function apolloGptImageRequestModel\(e\)/, "resolution routing must stay outside billing metadata");
     assert.doesNotMatch(bundle, /model:"gpt-image-2-official-mix"/);
 });
