@@ -16,6 +16,85 @@
         </script>
         <script>
             (function () {
+                if (window.oldHouseDesktop || (typeof window.showDirectoryPicker === "function" && location.hostname !== "127.0.0.1" && location.hostname !== "localhost")) return;
+                var pickerMode = "blank";
+                var notFound = function () { return new DOMException("NotFoundError", "NotFoundError"); };
+                var makeDirectory = function (name, initialFile, initialFiles) {
+                    var files = new Map();
+                    var directories = new Map();
+                    if (initialFile) files.set("project.json", initialFile);
+                    var directory = {
+                        name: name,
+                        getDirectoryHandle: async function (directoryName, options) {
+                            if (!directories.has(directoryName) && !(options && options.create)) throw notFound();
+                            if (!directories.has(directoryName)) directories.set(directoryName, makeDirectory(directoryName));
+                            return directories.get(directoryName);
+                        },
+                        getFileHandle: async function (fileName, options) {
+                            if (!files.has(fileName)) {
+                                if (!(options && options.create)) throw notFound();
+                                files.set(fileName, new File([""], fileName));
+                            }
+                            return {
+                                getFile: async function () { return files.get(fileName); },
+                                createWritable: async function () {
+                                    return {
+                                        write: async function (value) { files.set(fileName, new File([value], fileName, { type: "application/json" })); },
+                                        close: async function () {}
+                                    };
+                                }
+                            };
+                        }
+                    };
+                    directory.__files = files;
+                    (initialFiles || []).forEach(function (file) {
+                        var path = String(file.webkitRelativePath || file.name || "").split("/").filter(Boolean);
+                        if (path[0] === name) path.shift();
+                        if (!path.length) return;
+                        var current = directory;
+                        path.slice(0, -1).forEach(function (part) {
+                            if (!directories.has(part)) directories.set(part, makeDirectory(part));
+                            current = directories.get(part);
+                        });
+                        current.__files.set(path[path.length - 1], file);
+                    });
+                    return directory;
+                };
+                document.addEventListener("click", function (event) {
+                    var button = event.target && event.target.closest ? event.target.closest("button") : null;
+                    if (!button) return;
+                    var label = String(button.textContent || "");
+                    pickerMode = label.indexOf("导入") !== -1 ? "import" : label.indexOf("新建") !== -1 ? "blank" : pickerMode;
+                }, true);
+                window.showDirectoryPicker = async function () {
+                    if (pickerMode !== "import") return makeDirectory("浏览器工程");
+                    var input = document.createElement("input");
+                    input.type = "file";
+                    input.webkitdirectory = true;
+                    input.multiple = true;
+                    input.hidden = true;
+                    document.body.appendChild(input);
+                    var file = await new Promise(function (resolve) {
+                        var settled = false;
+                        var finish = function (value) {
+                            if (settled) return;
+                            settled = true;
+                            resolve(value);
+                        };
+                        input.addEventListener("change", function () { finish(input.files && input.files[0] ? input.files[0] : null); }, { once: true });
+                        input.addEventListener("cancel", function () { finish(null); }, { once: true });
+                        input.click();
+                    });
+                    input.remove();
+                    if (!file) throw new DOMException("AbortError", "AbortError");
+                    var selectedFiles = Array.from(input.files || []);
+                    var rootName = String(selectedFiles[0]?.webkitRelativePath || file.name || "导入工程").split("/")[0] || "导入工程";
+                    return makeDirectory(rootName.replace(/\.json$/i, "") || "导入工程", file.name === "project.json" ? file : null, selectedFiles);
+                };
+            })();
+        </script>
+        <script>
+            (function () {
                 var nativeFetch = window.fetch.bind(window);
                 var useLocalTudouProxy = Boolean(window.oldHouseDesktop) ||
                     location.hostname === "127.0.0.1" || location.hostname === "localhost";
@@ -58,7 +137,7 @@
                 };
             })();
         </script>
-      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260817-59"></script>
+      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260818-61"></script>
       <link rel="stylesheet" crossorigin href="./assets/index-DT58oPsm.css">
       <style>
         .laowu-canvas-viewport {
@@ -424,6 +503,54 @@
           grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
           align-items: end;
           gap: 14px;
+        }
+        .api-billing-panel {
+          display: grid;
+          gap: 12px;
+          margin-top: 16px;
+          padding: 14px 16px;
+          border: 1px solid #e4e7ec;
+          border-radius: 8px;
+          background: #f8fafc;
+        }
+        .api-billing-heading,
+        .api-billing-status-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .api-billing-current {
+          margin-top: 3px;
+          color: #101828;
+          font-size: 13px;
+          font-weight: 700;
+          line-height: 20px;
+        }
+        .api-billing-select {
+          width: 230px;
+        }
+        .api-billing-price {
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 20px;
+        }
+        .api-billing-price.is-ready {
+          color: #067647;
+        }
+        .api-billing-price.is-pending {
+          color: #b54708;
+        }
+        .api-billing-source {
+          flex: 1;
+          color: #667085;
+          font-size: 12px;
+          line-height: 20px;
+        }
+        .api-billing-error {
+          color: #b42318;
+          font-size: 12px;
+          line-height: 18px;
         }
         .imgbb-key-row {
           max-width: 540px;
@@ -997,6 +1124,25 @@
           border-color: #57534e;
           background: #292524;
           color: #e7e5e4;
+        }
+        .dark .api-billing-panel {
+          border-color: #44403c;
+          background: #1c1917;
+        }
+        .dark .api-billing-current {
+          color: #f5f5f4;
+        }
+        .dark .api-billing-source {
+          color: #a8a29e;
+        }
+        .dark .api-billing-price.is-ready {
+          color: #6ee7b7;
+        }
+        .dark .api-billing-price.is-pending {
+          color: #fbbf24;
+        }
+        .dark .api-billing-error {
+          color: #fca5a5;
         }
         .dark .rh-text-model-empty {
           border-color: #44403c;
