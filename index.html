@@ -16,7 +16,7 @@
         </script>
         <script>
             (function () {
-                if (window.oldHouseDesktop || (typeof window.showDirectoryPicker === "function" && location.hostname !== "127.0.0.1" && location.hostname !== "localhost")) return;
+                if (window.oldHouseDesktop || typeof window.showDirectoryPicker === "function") return;
                 var pickerMode = "blank";
                 var notFound = function () { return new DOMException("NotFoundError", "NotFoundError"); };
                 var makeDirectory = function (name, initialFile, initialFiles) {
@@ -137,7 +137,7 @@
                 };
             })();
         </script>
-      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260818-63"></script>
+      <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260820-66"></script>
       <link rel="stylesheet" crossorigin href="./assets/index-DT58oPsm.css">
       <style>
         .laowu-canvas-viewport {
