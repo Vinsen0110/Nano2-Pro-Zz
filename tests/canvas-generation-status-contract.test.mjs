@@ -11,9 +11,20 @@ test("canvas generation status hides percentages without disabling task progress
     assert.notEqual(statusEnd, -1);
 
     const statusComponent = bundle.slice(statusStart, statusEnd);
-    assert.match(statusComponent, /o=null/);
-    assert.doesNotMatch(statusComponent, /o=normalizeImageTaskProgress\(n\)/);
+    assert.match(statusComponent, /a=null/);
+    assert.doesNotMatch(statusComponent, /a=normalizeImageTaskProgress\(n\)/);
 
     assert.match(bundle, /function createGenerationProgressUpdater\(/);
     assert.match(bundle, /function createRemoteImageProgressUpdater\(/);
+});
+
+test("canvas distinguishes reference upload from image generation", () => {
+    const statusStart = bundle.indexOf("function uX(");
+    const statusEnd = bundle.indexOf("function dX(", statusStart);
+    const statusComponent = bundle.slice(statusStart, statusEnd);
+
+    assert.match(statusComponent, /stage:r/);
+    assert.match(statusComponent, /r==="uploading"\?"\\u4E0A\\u4F20\\u4E2D":"\\u751F\\u6210\\u4E2D"/);
+    assert.match(bundle, /stage:e\.node\.metadata\?\.generationStage/);
+    assert.match(bundle, /generationStage:[a-z],generationProgress:[a-z]/);
 });

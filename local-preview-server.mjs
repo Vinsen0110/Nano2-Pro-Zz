@@ -179,6 +179,7 @@ async function serveStatic(request, response, requestUrl) {
     }
 
     const relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+    const isIconAsset = pathname === "/icons" || pathname.startsWith("/icons/");
     let filePath = resolve(root, relativePath);
     if (filePath !== root && !filePath.startsWith(`${root}${sep}`)) {
         sendJson(response, 403, "Forbidden");
@@ -194,7 +195,9 @@ async function serveStatic(request, response, requestUrl) {
 
     const info = await fs.stat(filePath);
     response.writeHead(200, {
-        "Cache-Control": "no-store",
+        "Cache-Control": isIconAsset
+            ? "public, max-age=31536000, immutable"
+            : "no-store",
         "Content-Length": info.size,
         "Content-Type": mimeTypes[extname(filePath).toLowerCase()] || "application/octet-stream",
     });
