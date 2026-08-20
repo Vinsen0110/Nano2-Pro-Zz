@@ -181,6 +181,7 @@ test("only the Apilio Nano reference branch uses the Apilio file uploader", () =
 
 test("localhost keeps Chrome's native directory picker for real local projects", async () => {
     const indexHtml = await readFile(new URL("../index.html", import.meta.url), "utf8");
-    assert.match(indexHtml, /if \(window\.oldHouseDesktop \|\| typeof window\.showDirectoryPicker === "function"\) return;/);
+    assert.match(indexHtml, /var isPreview = new URLSearchParams\(location\.search\)\.has\("preview"\);/);
+    assert.match(indexHtml, /if \(\(window\.oldHouseDesktop \|\| typeof window\.showDirectoryPicker === "function"\) && !isPreview\) return;/);
     assert.doesNotMatch(indexHtml, /location\.hostname !== "127\.0\.0\.1"/);
 });

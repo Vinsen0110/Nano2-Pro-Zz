@@ -16,7 +16,8 @@
         </script>
         <script>
             (function () {
-                if (window.oldHouseDesktop || typeof window.showDirectoryPicker === "function") return;
+                var isPreview = new URLSearchParams(location.search).has("preview");
+                if ((window.oldHouseDesktop || typeof window.showDirectoryPicker === "function") && !isPreview) return;
                 var pickerMode = "blank";
                 var notFound = function () { return new DOMException("NotFoundError", "NotFoundError"); };
                 var makeDirectory = function (name, initialFile, initialFiles) {
@@ -135,6 +136,189 @@
                     }
                     return nativeXhrOpen.apply(this, arguments);
                 };
+            })();
+        </script>
+        <script>
+            (function () {
+                document.addEventListener("pointerover", function (event) {
+                    if (event.pointerType && event.pointerType !== "mouse") return;
+                    var target = event.target;
+                    if (!(target instanceof Element)) return;
+                    var button = target.closest(".canvas-model-menu > div > div > div:first-child > button");
+                    if (!button || button.contains(event.relatedTarget)) return;
+                    button.click();
+                }, true);
+            })();
+        </script>
+        <script>
+            (function () {
+                var panelSelector = ".canvas-generation-panel";
+                var edgeSize = 16;
+                // Keep a small interaction floor so a frame never loses its resize handles.
+                // The old 360 x 150 floor made compact canvas panels impossible.
+                var minWidth = 220;
+                var minHeight = 96;
+                var active = null;
+
+                var getPanel = function (target) {
+                    return target instanceof Element ? target.closest(panelSelector) : null;
+                };
+
+                var getMetrics = function (panel) {
+                    var rect = panel.getBoundingClientRect();
+                    var style = getComputedStyle(panel);
+                    var width = parseFloat(style.width) || rect.width;
+                    var height = parseFloat(style.height) || rect.height;
+                    return {
+                        rect: rect,
+                        width: width,
+                        height: height,
+                        scaleX: rect.width / width || 1,
+                        scaleY: rect.height / height || 1,
+                        maxWidth: parseFloat(style.maxWidth)
+                    };
+                };
+
+                var getEdges = function (event, panel) {
+                    var metrics = getMetrics(panel);
+                    var x = event.clientX - metrics.rect.left;
+                    var y = event.clientY - metrics.rect.top;
+                    return {
+                        right: x >= metrics.rect.width - edgeSize,
+                        bottom: y >= metrics.rect.height - edgeSize,
+                        metrics: metrics
+                    };
+                };
+
+                var setCursor = function (panel, edges) {
+                    if (!panel || active) return;
+                    panel.style.cursor = edges.right && edges.bottom
+                        ? "nwse-resize"
+                        : edges.right
+                            ? "ew-resize"
+                            : edges.bottom
+                                ? "ns-resize"
+                                : "";
+                };
+
+                var beginResize = function (event) {
+                    if (event.button !== 0) return;
+                    var panel = getPanel(event.target);
+                    if (!panel) return;
+                    var edges = getEdges(event, panel);
+                    if (!edges.right && !edges.bottom) return;
+
+                    var width = edges.metrics.width;
+                    var height = edges.metrics.height;
+                    var maxWidth = Number.isFinite(edges.metrics.maxWidth)
+                        ? Math.max(minWidth, edges.metrics.maxWidth)
+                        : Math.max(minWidth, (window.innerWidth - 32) / edges.metrics.scaleX);
+                    panel.style.setProperty("--canvas-panel-resize-width", width + "px");
+                    panel.style.setProperty("--canvas-panel-resize-height", height + "px");
+                    panel.dataset.canvasResizeReady = "true";
+                    panel.dataset.canvasResizeActive = "true";
+                    panel.style.cursor = edges.right && edges.bottom
+                        ? "nwse-resize"
+                        : edges.right
+                            ? "ew-resize"
+                            : "ns-resize";
+                    active = {
+                        panel: panel,
+                        startX: event.clientX,
+                        startY: event.clientY,
+                        width: width,
+                        height: height,
+                        scaleX: edges.metrics.scaleX,
+                        scaleY: edges.metrics.scaleY,
+                        right: edges.right,
+                        bottom: edges.bottom,
+                        maxWidth: maxWidth
+                    };
+                    try { panel.setPointerCapture(event.pointerId); } catch (error) {}
+                    event.preventDefault();
+                    event.stopPropagation();
+                };
+
+                var updateResize = function (event) {
+                    if (!active) return;
+                    var deltaX = (event.clientX - active.startX) / active.scaleX;
+                    var deltaY = (event.clientY - active.startY) / active.scaleY;
+                    var width = active.right
+                        ? Math.max(minWidth, Math.min(active.maxWidth, active.width + deltaX))
+                        : active.width;
+                    var height = active.bottom
+                        ? Math.max(minHeight, active.height + deltaY)
+                        : active.height;
+                    active.panel.style.setProperty("--canvas-panel-resize-width", width + "px");
+                    active.panel.style.setProperty("--canvas-panel-resize-height", height + "px");
+                    event.preventDefault();
+                    event.stopPropagation();
+                };
+
+                var finishResize = function (event) {
+                    if (!active) return;
+                    try { active.panel.releasePointerCapture(event.pointerId); } catch (error) {}
+                    active.panel.dataset.canvasResizeActive = "false";
+                    active.panel.style.cursor = "";
+                    active = null;
+                };
+
+                document.addEventListener("pointermove", function (event) {
+                    if (active) {
+                        updateResize(event);
+                        return;
+                    }
+                    var panel = getPanel(event.target);
+                    panel && setCursor(panel, getEdges(event, panel));
+                }, true);
+                document.addEventListener("pointerdown", beginResize, true);
+                window.addEventListener("pointerup", finishResize, true);
+                window.addEventListener("pointercancel", finishResize, true);
+            })();
+        </script>
+        <script>
+            (function () {
+                var panelSelector = ".canvas-generation-panel";
+                var editorSelector = "textarea, [contenteditable=\"true\"]";
+                var normalize = function (root) {
+                    if (!(root instanceof Element)) return;
+                    var containingPanel = root.closest(panelSelector);
+                    var panels = root.matches(panelSelector)
+                        ? [root]
+                        : containingPanel
+                            ? [containingPanel]
+                            : Array.from(root.querySelectorAll(panelSelector));
+                    panels.forEach(function (panel) {
+                        panel.querySelectorAll(editorSelector).forEach(function (editor) {
+                            if (editor.dataset.canvasFluidEditor !== "true") editor.dataset.canvasFluidEditor = "true";
+                            ["width", "height", "min-width", "min-height", "max-width", "max-height", "resize"]
+                                .forEach(function (property) {
+                                    if (editor.style.getPropertyValue(property)) editor.style.removeProperty(property);
+                                });
+                        });
+                    });
+                };
+                var observe = function () {
+                    normalize(document.documentElement);
+                    if (!document.body || typeof MutationObserver !== "function") return;
+                    var observer = new MutationObserver(function (records) {
+                        records.forEach(function (record) {
+                            if (record.type === "attributes") {
+                                normalize(record.target);
+                                return;
+                            }
+                            record.addedNodes.forEach(normalize);
+                        });
+                    });
+                    observer.observe(document.body, {
+                        subtree: true,
+                        childList: true,
+                        attributes: true,
+                        attributeFilter: ["style"]
+                    });
+                };
+                if (document.body) observe();
+                else document.addEventListener("DOMContentLoaded", observe, { once: true });
             })();
         </script>
       <script type="module" crossorigin src="./assets/index-B2KJ37fm.js?v=20260820-66"></script>
@@ -963,6 +1147,153 @@
         .dark .canvas-prompt-preset-select:hover {
           background: #3a3634 !important;
         }
+        .canvas-generation-panel {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          width: min(520px, calc(100vw - 32px));
+          min-width: 220px;
+          min-height: 0;
+          max-width: calc(100vw - 32px) !important;
+          box-sizing: border-box;
+          resize: none !important;
+          overflow: visible !important;
+        }
+        .canvas-generation-panel > .relative.h-full.w-full {
+          display: flex;
+          flex-direction: column;
+          flex: 1 1 auto;
+          min-height: 0;
+          height: auto !important;
+        }
+        .canvas-generation-panel > .p-3 {
+          display: flex;
+          flex: 1 1 auto;
+          min-height: 0;
+          flex-direction: column;
+          height: auto !important;
+        }
+        .canvas-generation-panel > .mb-2 {
+          flex: 0 0 auto;
+        }
+        .canvas-generation-panel > .relative.rounded-xl.border {
+          display: flex;
+          flex: 1 1 auto;
+          min-height: 0;
+          flex-direction: column;
+        }
+        .canvas-generation-panel[data-canvas-resize-active="true"] {
+          user-select: none;
+          touch-action: none;
+        }
+        .canvas-generation-panel::after {
+          position: absolute;
+          right: 3px;
+          bottom: 3px;
+          z-index: 20;
+          width: 14px;
+          height: 14px;
+          pointer-events: none;
+          content: "";
+          background: linear-gradient(135deg, transparent 0 58%, rgba(120, 113, 108, 0.58) 59% 64%, transparent 65% 73%, rgba(120, 113, 108, 0.58) 74% 79%, transparent 80%);
+          opacity: 0.7;
+        }
+        .canvas-generation-panel:not([data-canvas-resize-ready="true"]) textarea,
+        .canvas-generation-panel:not([data-canvas-resize-ready="true"]) [contenteditable="true"] {
+          flex: 1 1 96px;
+          width: 100% !important;
+          height: auto !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          max-height: none !important;
+          max-width: none !important;
+          resize: none !important;
+        }
+        .canvas-generation-panel > .relative.rounded-xl.border > [contenteditable="true"] {
+          flex-basis: 132px;
+        }
+        .canvas-generation-panel[data-canvas-resize-ready="true"] > .relative.rounded-xl.border > [contenteditable="true"] {
+          flex-basis: auto;
+        }
+        .canvas-generation-panel[data-canvas-resize-ready="true"] textarea,
+        .canvas-generation-panel[data-canvas-resize-ready="true"] [contenteditable="true"] {
+          flex: 1 1 auto;
+          width: 100% !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          height: auto !important;
+          max-height: none !important;
+          max-width: none !important;
+          resize: none !important;
+        }
+        .canvas-generation-panel > .p-3 > .canvas-generation-toolbar {
+          flex: 0 0 auto;
+        }
+        .canvas-generation-toolbar {
+          height: auto !important;
+          min-height: 48px;
+          flex-wrap: wrap;
+          align-content: center;
+        }
+        .canvas-generation-toolbar > div:first-child {
+          flex: 1 1 auto;
+          min-width: 0;
+          flex-wrap: wrap;
+        }
+        .canvas-generation-toolbar .canvas-model-select,
+        .canvas-generation-toolbar .canvas-generation-select,
+        .canvas-generation-toolbar .canvas-prompt-preset-select {
+          flex: 0 0 auto;
+        }
+        .canvas-model-menu > div > div > div:first-child {
+          background: #f5f5f4 !important;
+        }
+        .canvas-model-menu > div > div > div:first-child > button {
+          color: #57534e !important;
+          transition:
+            background-color 150ms ease,
+            color 150ms ease,
+            transform 150ms ease,
+            box-shadow 150ms ease !important;
+        }
+        .canvas-model-menu > div > div > div:first-child > button:hover,
+        .canvas-model-menu > div > div > div:first-child > button.bg-white {
+          background: #ffffff !important;
+          color: #1c1917 !important;
+          transform: translateX(2px);
+        }
+        .canvas-model-menu > div > div > div:first-child > button,
+        .canvas-model-menu > div > div > div:first-child > button span,
+        .canvas-model-menu [role="option"],
+        .canvas-model-menu [role="option"] span {
+          font-size: 11px !important;
+        }
+        .canvas-generation-panel:has(.canvas-model-select[title^="gpt-image-2"]) {
+          width: min(740px, calc(100vw - 32px)) !important;
+          max-width: calc(100vw - 32px) !important;
+        }
+        .canvas-generation-panel.canvas-generation-panel[data-canvas-resize-ready="true"] {
+          width: var(--canvas-panel-resize-width) !important;
+          height: var(--canvas-panel-resize-height) !important;
+        }
+        .canvas-generation-panel:has(.canvas-model-select[title^="gpt-image-2"]) .canvas-generation-toolbar {
+          height: auto !important;
+          min-height: 48px;
+          flex-wrap: wrap;
+        }
+        .canvas-generation-panel:has(.canvas-model-select[title^="gpt-image-2"]) .canvas-generation-toolbar > div:first-child {
+          flex: 1 1 auto;
+          flex-wrap: wrap;
+        }
+        .canvas-generation-toolbar .canvas-generate-button .bg-pink-100 {
+          min-height: 20px;
+          padding-right: 7px !important;
+          padding-left: 7px !important;
+          font-size: 12px !important;
+          line-height: 16px !important;
+          font-weight: 800 !important;
+          font-variant-numeric: tabular-nums;
+        }
         .dark .canvas-generation-menu,
         .dark .canvas-model-menu,
         .dark .canvas-prompt-preset-menu {
@@ -986,7 +1317,7 @@
         .dark .canvas-model-menu button:hover,
         .dark .canvas-model-menu button.bg-white {
           background: #292524 !important;
-          color: #f472b6 !important;
+          color: #f5f5f4 !important;
         }
         @layer theme {
           html.dark .canvas-generation-toolbar .canvas-generate-button {
