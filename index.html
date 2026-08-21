@@ -183,9 +183,11 @@
                     var metrics = getMetrics(panel);
                     var x = event.clientX - metrics.rect.left;
                     var y = event.clientY - metrics.rect.top;
+                    var edgeX = Math.min(edgeSize, Math.max(4, metrics.rect.width * 0.2));
+                    var edgeY = Math.min(edgeSize, Math.max(4, metrics.rect.height * 0.2));
                     return {
-                        right: x >= metrics.rect.width - edgeSize,
-                        bottom: y >= metrics.rect.height - edgeSize,
+                        right: x >= metrics.rect.width - edgeX,
+                        bottom: y >= metrics.rect.height - edgeY,
                         metrics: metrics
                     };
                 };
@@ -205,6 +207,11 @@
                     if (event.button !== 0) return;
                     var panel = getPanel(event.target);
                     if (!panel) return;
+                    // At low canvas zoom the fixed edge zone can cover most of the
+                    // panel. Interactive controls must keep their native click.
+                    var interactiveTarget = event.target instanceof Element &&
+                        event.target.closest("button, input, textarea, select, [contenteditable=\"true\"]");
+                    if (interactiveTarget) return;
                     var edges = getEdges(event, panel);
                     if (!edges.right && !edges.bottom) return;
 
