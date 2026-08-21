@@ -7,7 +7,7 @@ import tudouProxy from "../api/tudou-proxy.js";
 const bundle = await readFile(new URL("../assets/index-B2KJ37fm.js", import.meta.url), "utf8");
 
 test("supported text models stay isolated by site", () => {
-    assert.match(bundle, /APOLLO_TEXT_MODELS=\["gemini-3\.6-flash"\]/);
+    assert.match(bundle, /APOLLO_TEXT_MODELS=\["gemini-3\.7-flash"\]/);
     assert.match(bundle, /TUDOU_TEXT_MODELS=\["gpt-5\.5"\]/);
     assert.match(
         bundle,
@@ -20,6 +20,17 @@ test("supported text models stay isolated by site", () => {
     );
     assert.doesNotMatch(bundle, /gpt-5\.6-sol/);
     assert.doesNotMatch(bundle, /filter\(g=>!pr\(g\)\.toLowerCase\(\)\.includes\("gemini"\)\)/);
+});
+
+test("text model labels are unified without changing site request IDs", () => {
+    assert.match(bundle, /const UNIFIED_TEXT_MODEL_NAME="gemini-3\.7-flash";function displayTextModelName/);
+    assert.match(bundle, /r==="text"\?displayTextModelName\(e,v\):pr\(v\)/);
+    assert.match(bundle, /textValue:r==="text"\?displayTextModelName\(e,w\):pr\(w\)/);
+    assert.match(bundle, /APOLLO_TEXT_MODELS=\["gemini-3\.7-flash"\]/);
+    assert.match(bundle, /APOLLO_SITE_MODELS=\[[^\]]*gemini-3\.7-flash/);
+    assert.doesNotMatch(bundle, /APOLLO_TEXT_MODELS=\["gemini-3\.6-flash"\]/);
+    assert.match(bundle, /TUDOU_TEXT_MODELS=\["gpt-5\.5"\]/);
+    assert.match(bundle, /RUNNINGHUB_TEXT_MODELS/);
 });
 
 test("settings expose the active site's global default text model", () => {
@@ -37,7 +48,7 @@ test("settings expose the active site's global default text model", () => {
     assert.match(bundle, /onChange:\$=>h\(\{textModel:\$\}\)/);
 });
 
-test("Apilio and Tudou text generation use Chat Completions messages", async () => {
+test("Apilio, Tudou, and RH text generation use Chat Completions messages", async () => {
     const start = bundle.indexOf("function chatCompletionMessages");
     const end = bundle.indexOf("function SA", start);
     assert.ok(start >= 0 && end > start, "Chat Completions adapter should exist");
@@ -49,6 +60,8 @@ test("Apilio and Tudou text generation use Chat Completions messages", async () 
         "Gy",
         "xA",
         "isTudouSite",
+        "isRunningHubSite",
+        "RUNNINGHUB_LLM_ORIGIN",
         "wA",
         "aW",
         "AL",
@@ -66,6 +79,8 @@ test("Apilio and Tudou text generation use Chat Completions messages", async () 
         (baseUrl, path) => `${baseUrl.replace(/\/$/, "")}/v1${path}`,
         (_config, path) => `https://www.vinsen.top/api/tudou/v1${path}`,
         (config) => config.provider === "tudou",
+        (config) => config.provider === "runninghub",
+        "https://llm.runninghub.ai",
         () => ({ Authorization: "Bearer test-key", "Content-Type": "application/json" }),
         async () => "request failed",
         (payload) => {
@@ -77,7 +92,7 @@ test("Apilio and Tudou text generation use Chat Completions messages", async () 
 
     const progress = [];
     const result = await request(
-        { baseUrl: "https://api.apilio.ai", apiKey: "test-key", model: "gemini-3.6-flash" },
+        { baseUrl: "https://api.apilio.ai", apiKey: "test-key", model: "gemini-3.7-flash" },
         [{
             role: "user",
             content: [
@@ -91,7 +106,7 @@ test("Apilio and Tudou text generation use Chat Completions messages", async () 
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, "https://api.apilio.ai/v1/chat/completions");
     const body = JSON.parse(requests[0].init.body);
-    assert.equal(body.model, "gemini-3.6-flash");
+    assert.equal(body.model, "gemini-3.7-flash");
     assert.deepEqual(body.messages, [{
         role: "user",
         content: [
@@ -120,12 +135,30 @@ test("Apilio and Tudou text generation use Chat Completions messages", async () 
     assert.deepEqual(tudouBody.messages, [{ role: "user", content: "生成一段文字" }]);
     assert.equal(tudouBody.stream, false);
     assert.equal(requests[1].init.headers.Accept, "application/json");
+
+    await request(
+        {
+            provider: "runninghub",
+            baseUrl: "https://www.runninghub.ai",
+            apiKey: "test-key",
+            model: "google/gemini-3.7-flash",
+        },
+        [{ role: "user", content: "生成一段文字" }],
+    );
+    assert.equal(requests.length, 3);
+    assert.equal(requests[2].url, "https://llm.runninghub.ai/v1/chat/completions");
+    const runningHubBody = JSON.parse(requests[2].init.body);
+    assert.equal(runningHubBody.model, "google/gemini-3.7-flash");
+    assert.deepEqual(runningHubBody.messages, [{ role: "user", content: "生成一段文字" }]);
+    assert.equal(runningHubBody.stream, false);
 });
 
 test("text routing has no Responses endpoint", () => {
     assert.match(bundle, /await requestChatCompletions\(o,tW\(o,t\),n,r\)/);
     assert.match(bundle, /o\.apiFormat==="gemini"&&!isTudouSite\(o\)/);
-    assert.match(bundle, /isTudouSite\(e\)\?xA\(e,"\/chat\/completions"\):Gy\(e\.baseUrl,"\/chat\/completions"\)/);
+    assert.match(bundle, /isTudouSite\(e\)\?xA\(e,"\/chat\/completions"\):isRunningHubSite\(e\)\?Gy\(RUNNINGHUB_LLM_ORIGIN,"\/chat\/completions"\):Gy\(e\.baseUrl,"\/chat\/completions"\)/);
+    assert.doesNotMatch(bundle, /if\(isRunningHubSite\(o\)\)throw new Error/);
+    assert.doesNotMatch(bundle, /if\(isRunningHubSite\(i\)\)throw new Error/);
     assert.doesNotMatch(bundle, /xA\(e,"\/responses"\)/);
     assert.doesNotMatch(bundle, /fetch\([^)]*"\/responses"/);
 });
@@ -274,19 +307,33 @@ test("text requests reject a stale model from another site", () => {
     );
 });
 
-test("native clipboard images are handled before internal canvas clipboard data", () => {
+test("recent canvas copies and external image pastes use source priority", () => {
     const start = bundle.indexOf("K.clipboardData?.files");
     const end = bundle.indexOf('window.addEventListener("paste",O)', start);
     assert.ok(start >= 0 && end > start, "native paste handler should exist");
 
     const handler = bundle.slice(start, end);
     assert.match(handler, /K\.clipboardData\?\.items/);
-    assert.match(handler, /Ea\(Ee,Ji\(\)\)/);
-    assert.match(handler, /if\(Cf\(\)\)/);
-    assert.ok(
-        handler.indexOf("Ea(Ee,Ji())") < handler.indexOf("if(Cf())"),
-        "external clipboard images must take priority over stale copied canvas nodes",
-    );
-    assert.match(bundle, /if\(le&&!K\.altKey&&Q==="v"\)return;if\(!le/);
+    assert.match(handler, /f\.current\.preferInternal/);
+    assert.match(handler, /Date\.now\(\)-\(f\.current\.copiedAt\|\|0\)<3e4/);
+    assert.match(handler, /Ea\(Ee,lastPointerWorldRef\.current\|\|Ji\(\)\)/);
+    assert.match(handler, /if\(gt\)\{K\.preventDefault\(\),Cf\(\);return\}/);
+    assert.match(bundle, /if\(le&&!K\.altKey&&Q==="v"\)\{return\}/);
     assert.doesNotMatch(bundle, /returnif/);
+});
+
+test("canvas copy reads the current selection and synchronizes click selection immediately", () => {
+    assert.match(bundle, /Ih=c\.useCallback\(\(\)=>\{const O=oo\.current;/);
+    assert.match(bundle, /lastPointerWorldRef=c\.useRef\(null\)/);
+    assert.match(bundle, /lastPointerWorldRef\.current=or\(O\.clientX,O\.clientY\)/);
+    assert.match(bundle, /const K=lastPointerWorldRef\.current\|\|Ji\(\)/);
+    assert.match(bundle, /copiedAt:Date\.now\(\),preferInternal:!0/);
+    assert.match(bundle, /document\.addEventListener\("visibilitychange",Q\)/);
+    assert.match(bundle, /ye\(gt\),oo\.current=gt;/);
+    assert.match(bundle, /function sanitizeCanvasNodeClone\(e\)\{const t=\{\.\.\.e,position:\{\.\.\.e\.position\},metadata:e\.metadata\?\{\.\.\.e\.metadata\}:void 0\}/);
+});
+
+test("Alt-click duplication suppresses the browser's native save action", () => {
+    assert.match(bundle, /O\.altKey&&O\.preventDefault\(\)/);
+    assert.match(bundle, /onClick:_e=>\{_e\.altKey&&\(_e\.preventDefault\(\),_e\.stopPropagation\(\)\)\}/);
 });

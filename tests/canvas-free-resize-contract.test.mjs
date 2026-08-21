@@ -28,3 +28,9 @@ test("text generation panels use the same outer-frame resize contract", () => {
     assert.match(indexHtml, /\.canvas-generation-panel > \.p-3 \{[^}]*display: flex;[^}]*flex: 1 1 auto;[^}]*min-height: 0;/s);
     assert.match(indexHtml, /\.canvas-generation-panel\[data-canvas-resize-ready="true"\] textarea,[\s\S]*?width: 100% !important;[^}]*min-width: 0 !important;[^}]*min-height: 0 !important;[^}]*max-width: none !important;/s);
 });
+
+test("generation panels share the standard text-editor width before a user resize", () => {
+    assert.match(indexHtml, /\.canvas-generation-panel \{[\s\S]*?width: min\(660px, calc\(100vw - 32px\)\);/s);
+    assert.match(bundle, /canvasTextBoxResizeStyle\(636,96\)/);
+    assert.match(bundle, /canvasTextBoxResizeStyle\(636,132\)/);
+});

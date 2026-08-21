@@ -1,9 +1,10 @@
 export const RUNNINGHUB_ORIGIN = "https://www.runninghub.ai";
+export const RUNNINGHUB_LLM_ORIGIN = "https://llm.runninghub.ai";
 export const RUNNINGHUB_SITE_ID = "runninghub";
 export const RUNNINGHUB_SITE_NAME = "RH";
-export const RUNNINGHUB_SITE_MODELS = ["nano-banana-pro", "gpt-image-2"];
+export const RUNNINGHUB_SITE_MODELS = ["nano-banana-pro", "gpt-image-2", "google/gemini-3.7-flash"];
 export const RUNNINGHUB_IMAGE_MODELS = ["nano-banana-pro", "gpt-image-2"];
-export const RUNNINGHUB_TEXT_MODELS = [];
+export const RUNNINGHUB_TEXT_MODELS = ["google/gemini-3.7-flash"];
 
 export const RUNNINGHUB_ASPECT_RATIOS = [
     "1:1",

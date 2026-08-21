@@ -26,7 +26,7 @@ test("double-click text generation creates a configured text node", () => {
 
 test("connected text generation becomes reverse prompt for an image source", () => {
     assert.match(bundle, /isReverseText=O===Ne\.Text&&sourceNode\?\.type===Ne\.Image/);
-    assert.match(bundle, /isReverseText\?\{reversePrompt:!0\}:\{\}/);
+    assert.match(bundle, /\.\.\.isReverseText\?\{reversePrompt:!0[^}]*\}:\{\}/);
     assert.match(
         bundle,
         /title:isReverseText\?"\\u53CD\\u63A8\\u63D0\\u793A\\u8BCD":"\\u6587\\u672C\\u751F\\u6210"/,
