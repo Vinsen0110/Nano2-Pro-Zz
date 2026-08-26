@@ -18,7 +18,7 @@ test("site displays use RH, Apilio, Tudou order without mutating stored channels
         { id: "runninghub", name: "RH" },
     ];
 
-    assert.deepEqual(SITE_DISPLAY_ORDER, ["runninghub", "default", "tudou"]);
+    assert.deepEqual(SITE_DISPLAY_ORDER, ["runninghub", "default", "tudou", "apiai"]);
     assert.deepEqual(orderSiteChannels(channels).map(({ name }) => name), ["RH", "Apilio", "Tudou"]);
     assert.deepEqual(channels.map(({ name }) => name), ["Apilio", "Tudou", "RH"]);
     assert.deepEqual(

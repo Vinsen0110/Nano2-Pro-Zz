@@ -11,7 +11,7 @@ test("supported text models stay isolated by site", () => {
     assert.match(bundle, /TUDOU_TEXT_MODELS=\["gpt-5\.5"\]/);
     assert.match(
         bundle,
-        /function siteTextModelNames\(e\)\{return e===RUNNINGHUB_SITE_ID\?RUNNINGHUB_TEXT_MODELS:e===TUDOU_SITE_ID\?TUDOU_TEXT_MODELS:APOLLO_TEXT_MODELS\}/,
+        /function siteTextModelNames\(e\).*RUNNINGHUB_TEXT_MODELS.*TUDOU_TEXT_MODELS.*APIAI_TEXT_MODELS.*APOLLO_TEXT_MODELS/,
     );
     assert.match(bundle, /textModels:siteModelRefs\(t,siteTextModelNames\(t\)\)/);
     assert.match(

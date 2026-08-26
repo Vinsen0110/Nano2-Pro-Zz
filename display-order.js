@@ -1,4 +1,4 @@
-export const SITE_DISPLAY_ORDER = ["runninghub", "default", "tudou"];
+export const SITE_DISPLAY_ORDER = ["runninghub", "default", "tudou", "apiai"];
 
 function stableOrder(values, rank) {
     return [...values]
