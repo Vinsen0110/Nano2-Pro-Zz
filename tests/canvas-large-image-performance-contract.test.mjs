@@ -30,6 +30,13 @@ test("preview generation stays queued and both caches stay bounded", () => {
     assert.match(bundle, /t\.length>160/);
 });
 
+test("remote image caching cannot remain pending forever", () => {
+    assert.match(bundle, /async function fetchImageBlobWithProgress\(e,t\)\{const n=new AbortController,r=setTimeout\(\(\)=>n\.abort\(\),6e4\)/);
+    assert.match(bundle, /if\(n\.signal\.aborted\)throw new Error\("图片加载超时，请检查网络后重试"\)/);
+    assert.match(bundle, /throw new Error\(`图片下载失败：\$\{o\.status\}`\)/);
+    assert.match(bundle, /m&&\(g>0\|\|Number\.isFinite\(h\)&&h>0\)\?y\.jsxs\("div"/);
+});
+
 test("all generated image results are displayed before browser cache persistence", () => {
     assert.match(bundle, /function queueCanvasGeneratedImageCache\(/);
     assert.match(bundle, /function cacheCanvasGeneratedImage\(/);
@@ -38,4 +45,19 @@ test("all generated image results are displayed before browser cache persistence
         4,
     );
     assert.doesNotMatch(bundle, /if\(isRemoteImageUrl\((?:nt|Er|bn)\.dataUrl\)\)/);
+});
+
+test("asset re-import restores storage-backed image content and dimensions", () => {
+    assert.ok(
+        bundle.includes(
+            'Af=c.useCallback(async O=>{const K=O.storageKey?{url:await Xl(O.storageKey,O.dataUrl||""),storageKey:O.storageKey,width:Number(O.width)||0,height:Number(O.height)||0,bytes:Number(O.bytes)||0,mimeType:O.mimeType||"image/png"}:await bo(O.dataUrl);if(!K.url)throw new Error("素材图片读取失败，请重新导入");const Q=K.width>0&&K.height>0?K:await gh(K.url)',
+        ),
+    );
+});
+
+test("Alt-click duplication schedules the expensive canvas insertion as a transition", () => {
+    assert.match(
+        bundle,
+        /c\.startTransition\?c\.startTransition\(\(\)=>\{_\(Vt=>\[\.\.\.Vt,\.\.\.Rn\]\),nt\.length&&ee\(Vt=>\[\.\.\.Vt,\.\.\.nt\]\)\}\):\(_\(Vt=>\[\.\.\.Vt,\.\.\.Rn\]\),nt\.length&&ee\(Vt=>\[\.\.\.Vt,\.\.\.nt\]\)\)/,
+    );
 });

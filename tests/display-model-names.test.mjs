@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+const source = await readFile(new URL("../display-model-names.js", import.meta.url), "utf8");
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+test("maps the Grsai backend VIP model to the shared UI name", () => {
+  assert.match(source, /\["gpt-image-2-vip",\s*"gpt-image-2"\]/);
+  assert.match(source, /canvas-model-picker/);
+  assert.match(source, /settings-model-select/);
+});
+
+test("uses the repository Gemini SVG for the unified Flash model", () => {
+  assert.match(source, /\["gemini-3\.7-flash",\s*"\.\/icons\/gemini\.svg"\]/);
+  assert.match(source, /setAttribute\("src", icon\)/);
+});
+
+test("loads the display-only model label layer after the app bundle", () => {
+  const bundleIndex = html.indexOf("index-B2KJ37fm.js");
+  const labelLayerIndex = html.indexOf("display-model-names.js");
+  assert.ok(bundleIndex >= 0);
+  assert.ok(labelLayerIndex > bundleIndex);
+});
