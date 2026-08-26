@@ -162,15 +162,18 @@ test("fails a stalled Apilio upload instead of waiting forever", async () => {
     );
 });
 
-test("only the Apilio Nano reference branch uses the Apilio file uploader", () => {
+test("all Apilio reference branches use the Apilio file uploader", () => {
     assert.match(bundle, /apilioHostedReferenceUrl.*uploadApilioReferenceBlob.*from"\.\.\/apilio-reference-upload\.js"/);
-    assert.match(bundle, /if\(isApilioSite\(e\)\)\{const [a-z]=apilioHostedReferenceUrl\(t\);if\([a-z]\)return reportImageTaskProgress\(r,10\),[a-z]\}/);
+    assert.doesNotMatch(bundle, /if\(isApilioSite\(e\)\)\{const [a-z]=apilioHostedReferenceUrl\(t\);if\([a-z]\)return reportImageTaskProgress\(r,10\),[a-z]\}/);
     assert.match(bundle, /if\(isApilioSite\(e\)\)return uploadApilioReferenceBlob\(e,i,\{filename:t\.name\|\|"reference\.png",signal:n,onProgress:r\}\)/);
+    assert.match(bundle, /if\(isApilioSite\(t\)\)return uploadApilioReferenceBlob\(t,l,\{filename:"text-reference",signal:n\}\)/);
+    assert.match(bundle, /if\(isRunningHubSite\(t\)\)return uploadRunningHubReferenceBlob\(t,l,\{signal:n\}\)/);
     assert.match(bundle, /reportImageTaskProgress\(i,10,"generating"\)/);
     assert.match(bundle, /generationStage:[a-z]/);
     assert.match(bundle, /remoteSourceUrl:isRemoteImageUrl\(e\)\?e:void 0/);
     assert.match(bundle, /remoteSourceUrl:e\.metadata\.remoteSourceUrl/);
-    assert.match(bundle, /async function q6\(e,t\).*t\?apilioHostedReferenceUrl\(r\):""/);
+    assert.match(bundle, /async function q6\(e,t\).*dataUrl:await n\(r\)/);
+    assert.doesNotMatch(bundle, /async function q6\(e,t\).*apilioHostedReferenceUrl\(r\)/);
     assert.match(bundle, /K==="image"&&isApilioSite\(Se\)/);
     assert.match(bundle, /O\.type===Ne\.Image&&isApilioSite\(Se\)/);
     assert.match(bundle, /submitApilioNanoImages\(a,l,d,i,o\?\.signal,o\?\.onProgress\)/);
