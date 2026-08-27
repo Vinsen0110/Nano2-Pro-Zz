@@ -276,12 +276,12 @@ test("RH is a fully isolated third site in the compiled app", () => {
     assert.match(bundle, /apiKeys:i\?\.apiKeys,activeKeyId:i\?\.activeKeyId/);
     assert.match(bundle, /siteImageModelNames\(e\)\{return e===RUNNINGHUB_SITE_ID\?RUNNINGHUB_IMAGE_MODELS/);
     assert.match(bundle, /siteTextModelNames\(e\)\{return e===RUNNINGHUB_SITE_ID\?RUNNINGHUB_TEXT_MODELS/);
-    assert.match(bundle, /textModel:d\?a\(e\.textModel,d\):""/);
+    assert.match(bundle, /textSiteId:d\.textSiteId,textModel:d\.textModel/);
     assert.match(bundle, /isRunningHubSite\(r\).*runRunningHubImageGeneration\(r,t,\[\]/s);
     assert.match(bundle, /runningHubReferenceSource/);
     assert.match(bundle, /runRunningHubImageGeneration/);
     assert.doesNotMatch(bundle, /n\.slice\(0,10\)/);
-    assert.match(bundle, /RH \\u6682\\u672A\\u914D\\u7F6E\\u6587\\u672C\\u6A21\\u578B/);
+    assert.match(bundle, /RUNNINGHUB_TEXT_MODELS/);
     assert.match(bundle, /if\(isRunningHubSite\(K\)\)\{const Q=await fetchRunningHubAccount\(K\)/);
     assert.match(bundle, /Ba=!isTudouSite\(balanceSite\)&&!isRunningHubSite\(balanceSite\)/);
     assert.match(bundle, /isRunningHubSite\(balanceSite\)\?`\$\{qke\(be\)\} \$`/);

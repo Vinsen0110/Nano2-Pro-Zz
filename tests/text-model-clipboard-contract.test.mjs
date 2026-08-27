@@ -33,17 +33,15 @@ test("text model labels are unified without changing site request IDs", () => {
     assert.match(bundle, /RUNNINGHUB_TEXT_MODELS/);
 });
 
-test("settings expose the active site's global default text model", () => {
+test("settings expose an independent global text site and model", () => {
     assert.match(bundle, /className:"generation-settings-sections"/);
     assert.match(bundle, /children:"\\u751F\\u56FE\\u6A21\\u578B\\u8BBE\\u7F6E"/);
     assert.match(bundle, /children:"\\u6587\\u672C\\u6A21\\u578B\\u8BBE\\u7F6E"/);
+    assert.match(bundle, /label:"\\u9ED8\\u8BA4\\u6587\\u672C\\u8BF7\\u6C42\\u7AD9\\u70B9"/);
+    assert.match(bundle, /label:"\\u9ED8\\u8BA4\\u6587\\u672C\\u6A21\\u578B（\\u5168\\u5C40）"/);
     assert.match(
         bundle,
-        /label:"\\u9ED8\\u8BA4\\u6587\\u672C\\u6A21\\u578B\\uFF08"\+\(activeSiteChannel\(a\)\?\.name/,
-    );
-    assert.match(
-        bundle,
-        /value:a\.textModel\|\|defaultTextModelRef\(a\.activeSiteId\|\|DP\),capability:"text"/,
+        /value:a\.textModel\|\|defaultTextModelRef\(a\.textSiteId\|\|DP\),capability:"text"/,
     );
     assert.match(bundle, /onChange:\$=>h\(\{textModel:\$\}\)/);
 });
@@ -307,7 +305,7 @@ test("text requests reject a stale model from another site", () => {
     );
     assert.match(
         bundle,
-        /function ODe\(e,t,n\)\{const r=CS\(e,t\)\|\|\[\],o=yx\(n,e\.channels,e\.activeSiteId\);if\(o&&r\.includes\(o\)\)return o;const a=yx\(IDe\(e,t\),e\.channels,e\.activeSiteId\);return a&&r\.includes\(a\)\?a:r\[0\]\|\|""\}/,
+        /function ODe\(e,t,n\)\{const r=CS\(e,t\)\|\|\[\],o=yx\(t==="text"\?\(e\.textModel\|\|textRequestConfig\(e\)\.textModel\):n,e\.channels,t==="text"\?\(e\.textSiteId\|\|DP\):e\.activeSiteId\)/,
     );
 });
 
