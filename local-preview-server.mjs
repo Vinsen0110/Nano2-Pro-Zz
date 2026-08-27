@@ -41,13 +41,14 @@ function errorDetails(error) {
 }
 
 function requestHeaders(request) {
-    const headers = new Headers();
-    for (const [name, value] of Object.entries(request.headers)) {
-        if (value == null || name === "host" || name === "content-length") continue;
-        if (Array.isArray(value)) value.forEach((item) => headers.append(name, item));
-        else headers.set(name, value);
+    const headers = new Headers({
+        Accept: request.headers.accept || "application/json",
+        "Accept-Encoding": "identity",
+        Authorization: request.headers.authorization,
+    });
+    if (request.headers["content-type"]) {
+        headers.set("Content-Type", request.headers["content-type"]);
     }
-    headers.set("Accept-Encoding", "identity");
     return headers;
 }
 
@@ -77,6 +78,70 @@ async function pipeFetchResponse(upstream, response, extraHeaders = {}) {
         return;
     }
     await pipeline(Readable.fromWeb(upstream.body), response);
+}
+
+function sseData(value) {
+    return `data: ${JSON.stringify(value)}\n\n`;
+}
+
+async function proxyTudouGeminiStream(request, response, target, headers, payload, controller) {
+    let closed = false;
+    const heartbeat = setInterval(() => {
+        if (!closed && !response.writableEnded) response.write(": tudou-proxy\n\n");
+    }, 5_000);
+    response.writeHead(200, {
+        "Cache-Control": "no-store",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "X-Accel-Buffering": "no",
+        "X-Tudou-Proxy": "local-node-stream",
+        "X-Tudou-References-Inlined": "pending",
+    });
+    response.write(": tudou-proxy\n\n");
+
+    try {
+        const normalized = await inlineTudouGeminiReferences(target, payload, {
+            signal: controller.signal,
+        });
+        const upstream = await fetch(target, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(normalized.payload),
+            redirect: "manual",
+            signal: controller.signal,
+        });
+        if (!upstream.ok) {
+            const raw = await upstream.text();
+            let message = raw || `Tudou request failed (${upstream.status})`;
+            try {
+                const parsed = JSON.parse(raw);
+                message = parsed?.error?.message || parsed?.message || message;
+            } catch {
+                // Keep the upstream text when it is not JSON.
+            }
+            response.write(sseData({ error: { message } }));
+            return;
+        }
+
+        if (!upstream.body) {
+            response.write(sseData({ error: { message: "Tudou stream returned no body" } }));
+            return;
+        }
+        const reader = upstream.body.getReader();
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (!closed && !response.writableEnded && value) response.write(Buffer.from(value));
+        }
+    } catch (error) {
+        if (!controller.signal.aborted && !closed && !response.writableEnded) {
+            console.error("Tudou streaming proxy request failed:", errorDetails(error));
+            response.write(sseData({ error: { message: errorDetails(error) } }));
+        }
+    } finally {
+        closed = true;
+        clearInterval(heartbeat);
+        if (!response.writableEnded) response.end();
+    }
 }
 
 async function proxyTudouApi(request, response, requestUrl) {
@@ -114,20 +179,15 @@ async function proxyTudouApi(request, response, requestUrl) {
         const isGeminiImageRequest = method === "POST"
             && isTudouGeminiImageTarget(target)
             && String(request.headers["content-type"] || "").includes("application/json");
-        let convertedReferences = 0;
+        if (isGeminiImageRequest) {
+            const payload = JSON.parse((await readRequestBody(request)).toString("utf8"));
+            await proxyTudouGeminiStream(request, response, target, headers, payload, controller);
+            return;
+        }
+
         let body;
         if (method !== "GET" && method !== "HEAD") {
-            if (isGeminiImageRequest) {
-                const payload = JSON.parse((await readRequestBody(request)).toString("utf8"));
-                const normalized = await inlineTudouGeminiReferences(target, payload, {
-                    signal: controller.signal,
-                });
-                body = JSON.stringify(normalized.payload);
-                convertedReferences = normalized.converted;
-                headers.delete("content-length");
-            } else {
-                body = request;
-            }
+            body = request;
         }
         const upstream = await fetch(target, {
             method,
@@ -139,7 +199,7 @@ async function proxyTudouApi(request, response, requestUrl) {
         });
         await pipeFetchResponse(upstream, response, {
             "X-Tudou-Proxy": "local-node-stream",
-            "X-Tudou-References-Inlined": String(convertedReferences),
+            "X-Tudou-References-Inlined": "0",
         });
     } catch (error) {
         if (controller.signal.aborted) return;

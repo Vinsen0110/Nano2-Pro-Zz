@@ -278,6 +278,16 @@ test("RH is a fully isolated third site in the compiled app", () => {
     assert.match(bundle, /siteTextModelNames\(e\)\{return e===RUNNINGHUB_SITE_ID\?RUNNINGHUB_TEXT_MODELS/);
     assert.match(bundle, /textSiteId:d\.textSiteId,textModel:d\.textModel/);
     assert.match(bundle, /isRunningHubSite\(r\).*runRunningHubImageGeneration\(r,t,\[\]/s);
+    assert.match(
+        bundle,
+        /if\(isRunningHubSite\(a\)\).*runningHubReferenceSource\(a,h,o\?\.signal\).*runRunningHubImageGeneration/s,
+        "RH image-to-image must upload references and use the native async generator",
+    );
+    assert.match(
+        bundle,
+        /function bd\(e,t\)\{const n=\$S\(t\).*o=\(n\?e\.channels\.find\(a=>a\.id===n\.channelId\):null\)\|\|activeSiteChannel\(e\)/,
+        "a namespaced model must resolve its own provider channel before the active canvas site",
+    );
     assert.match(bundle, /runningHubReferenceSource/);
     assert.match(bundle, /runRunningHubImageGeneration/);
     assert.doesNotMatch(bundle, /n\.slice\(0,10\)/);
