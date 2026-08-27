@@ -5,9 +5,51 @@ const DISPLAY_ICON_MAP = new Map([
   ["gemini-3.7-flash", "./icons/gemini.svg"],
 ]);
 
+const MODEL_CONTAINER_SELECTOR = [
+  ".canvas-composer-model-picker",
+  ".canvas-model-picker",
+  ".canvas-model-menu",
+  ".settings-model-select",
+  '[role="listbox"]',
+].join(", ");
+
+const MODEL_ITEM_SELECTOR = [
+  ".canvas-composer-model-picker",
+  ".canvas-model-picker",
+  '.canvas-model-menu [role="option"]',
+  ".settings-model-select",
+  '[role="listbox"] [role="option"]',
+].join(", ");
+
+function iconForLabel(label) {
+  const normalized = String(label || "").toLowerCase();
+  for (const [model, icon] of DISPLAY_ICON_MAP) {
+    if (normalized.includes(model)) return icon;
+  }
+  return "";
+}
+
+function ensureModelIcon(item, icon) {
+  const image = item.querySelector("img");
+  if (image) {
+    if (image.getAttribute("src") !== icon) image.setAttribute("src", icon);
+    return;
+  }
+
+  // The composer trigger can render a generic SVG fallback instead of an img.
+  // Replace only the leading model icon, leaving the dropdown chevron intact.
+  const fallback = item.querySelector('svg.size-4.shrink-0, svg[class*="size-4"][class*="shrink-0"]');
+  if (!fallback) return;
+  const replacement = document.createElement("img");
+  replacement.src = icon;
+  replacement.alt = "";
+  replacement.className = "size-4 shrink-0";
+  fallback.replaceWith(replacement);
+}
+
 function normalizeModelLabels(root = document) {
   const containers = root.querySelectorAll?.(
-    ".canvas-model-picker, .canvas-model-menu, .settings-model-select, [role=\"listbox\"]",
+    MODEL_CONTAINER_SELECTOR,
   ) || [];
   for (const container of containers) {
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
@@ -23,15 +65,13 @@ function normalizeModelLabels(root = document) {
   }
 
   const modelItems = root.querySelectorAll?.(
-    ".canvas-model-picker, .canvas-model-menu [role=\"option\"], .settings-model-select, [role=\"listbox\"] [role=\"option\"]",
+    MODEL_ITEM_SELECTOR,
   ) || [];
   for (const item of modelItems) {
     const label = String(item.textContent || "").trim();
-    const icon = DISPLAY_ICON_MAP.get(label);
+    const icon = iconForLabel(label);
     if (!icon) continue;
-    for (const image of item.querySelectorAll("img")) {
-      if (image.getAttribute("src") !== icon) image.setAttribute("src", icon);
-    }
+    ensureModelIcon(item, icon);
   }
 }
 
