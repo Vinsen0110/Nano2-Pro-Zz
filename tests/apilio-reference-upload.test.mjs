@@ -166,8 +166,8 @@ test("all Apilio reference branches use the Apilio file uploader", () => {
     assert.match(bundle, /apilioHostedReferenceUrl.*uploadApilioReferenceBlob.*from"\.\.\/apilio-reference-upload\.js"/);
     assert.doesNotMatch(bundle, /if\(isApilioSite\(e\)\)\{const [a-z]=apilioHostedReferenceUrl\(t\);if\([a-z]\)return reportImageTaskProgress\(r,10\),[a-z]\}/);
     assert.match(bundle, /if\(isApilioSite\(e\)\)return uploadApilioReferenceBlob\(e,i,\{filename:t\.name\|\|"reference\.png",signal:n,onProgress:r\}\)/);
-    assert.match(bundle, /provider==="apilio"\|\|String\(t\?\.baseUrl\|\|""\)\.includes\("api\.apilio\.ai"\)\?uploadApilioReferenceBlob\(t,l,\{filename:"text-reference",signal:n\}\)/);
-    assert.match(bundle, /provider==="runninghub"\|\|String\(t\?\.baseUrl\|\|""\)\.includes\("runninghub\.ai"\)\)return uploadRunningHubReferenceBlob\(t,l,\{signal:n\}\)/);
+    assert.match(bundle, /if\(isApilioSite\(t\)\)return uploadApilioReferenceBlob\(t,l,\{filename:"text-reference",signal:n\}\)/);
+    assert.match(bundle, /if\(isRunningHubSite\(t\)\)return uploadRunningHubReferenceBlob\(t,l,\{signal:n\}\)/);
     assert.match(bundle, /reportImageTaskProgress\(i,10,"generating"\)/);
     assert.match(bundle, /generationStage:[a-z]/);
     assert.match(bundle, /remoteSourceUrl:isRemoteImageUrl\(e\)\?e:void 0/);

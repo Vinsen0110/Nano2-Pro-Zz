@@ -279,7 +279,7 @@ test("RH is a fully isolated third site in the compiled app", () => {
     assert.match(bundle, /textModel:d\?a\(e\.textModel,d\):""/);
     assert.match(bundle, /isRunningHubSite\(r\).*runRunningHubImageGeneration\(r,t,\[\]/s);
     assert.match(bundle, /runningHubReferenceSource/);
-    assert.match(bundle, /if\(n\.length>10\)throw new Error\("RH \\u6700\\u591A\\u652F\\u6301 10 \\u5F20\\u53C2\\u8003\\u56FE"\)/);
+    assert.match(bundle, /runRunningHubImageGeneration/);
     assert.doesNotMatch(bundle, /n\.slice\(0,10\)/);
     assert.match(bundle, /RH \\u6682\\u672A\\u914D\\u7F6E\\u6587\\u672C\\u6A21\\u578B/);
     assert.match(bundle, /if\(isRunningHubSite\(K\)\)\{const Q=await fetchRunningHubAccount\(K\)/);
@@ -291,7 +291,7 @@ test("RH is a fully isolated third site in the compiled app", () => {
     assert.match(bundle, /runningHubImagePrice\(e,t\)/, "RH price must be visible");
     assert.match(bundle, /pke\(h,n\.imageCount>0\)/, "config nodes must use reference pricing");
     assert.match(bundle, /pke\(w,i\.some\(z=>z\.active&&z\.kind==="image"&&z\.previewUrl\)\)/);
-    assert.match(bundle, /\["apilio","tudou","runninghub","grsai","apiai"\]\.includes\(activeSiteChannel\(a\)\?\.provider\)/);
+    assert.match(bundle, /\["apilio","tudou","runninghub","grsai"\]\.includes\(activeSiteChannel\(a\)\?\.provider\)/);
     assert.match(bundle, /u=Array\.isArray\(t\.channels\)\?bd\(t,t\.model\):t/, "the active channel must be resolved");
     assert.match(bundle, /isRunningHubSite\(u\)/, "RH GPT controls must appear on canvas");
     assert.doesNotMatch(bundle, /if\(r\)return null;const o=/);

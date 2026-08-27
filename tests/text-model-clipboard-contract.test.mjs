@@ -11,7 +11,7 @@ test("supported text models stay isolated by site", () => {
     assert.match(bundle, /TUDOU_TEXT_MODELS=\["gpt-5\.5"\]/);
     assert.match(
         bundle,
-        /function siteTextModelNames\(e\).*RUNNINGHUB_TEXT_MODELS.*TUDOU_TEXT_MODELS.*APIAI_TEXT_MODELS.*APOLLO_TEXT_MODELS/,
+        /function siteTextModelNames\(e\)\{return e===RUNNINGHUB_SITE_ID\?RUNNINGHUB_TEXT_MODELS:e===TUDOU_SITE_ID\?TUDOU_TEXT_MODELS:e===GRSAI_SITE_ID\?GRSAI_TEXT_MODELS:APOLLO_TEXT_MODELS\}/,
     );
     assert.match(bundle, /textModels:siteModelRefs\(t,siteTextModelNames\(t\)\)/);
     assert.match(
@@ -180,6 +180,8 @@ test("large text reference images are compressed only in the request copy", asyn
         "Ln",
         "isImgBbReferenceUrl",
         "isTudouSite",
+        "isApilioSite",
+        "isRunningHubSite",
         `${compressor};return prepareTextChatMessages;`,
     );
     const compressMessages = makeCompressor(
@@ -215,6 +217,8 @@ test("large text reference images are compressed only in the request copy", asyn
         },
         (url) => String(url).startsWith("https://i.ibb.co/"),
         (config) => config?.provider === "tudou",
+        (config) => config?.provider === "apilio",
+        (config) => config?.provider === "runninghub",
     );
     const originalUrl = `data:application/octet-stream;base64,${"A".repeat(8 * 1024 * 1024)}`;
     const source = [{
