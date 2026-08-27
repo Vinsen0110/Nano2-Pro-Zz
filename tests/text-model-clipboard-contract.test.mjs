@@ -319,6 +319,7 @@ test("recent canvas copies and external image pastes use source priority", () =>
     assert.match(handler, /Ea\(Ee,lastPointerWorldRef\.current\|\|Ji\(\)\)/);
     assert.match(handler, /if\(gt\)\{K\.preventDefault\(\),Cf\(\);return\}/);
     assert.match(bundle, /if\(le&&!K\.altKey&&Q==="v"\)\{return\}/);
+    assert.match(bundle, /if\(le&&!K\.altKey&&Q==="c"\)\{Ih\(\)&&\(K\.preventDefault\(\),K\.stopPropagation\(\)\);return\}/);
     assert.doesNotMatch(bundle, /returnif/);
 });
 
