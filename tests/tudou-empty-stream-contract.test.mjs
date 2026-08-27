@@ -57,6 +57,7 @@ test("Tudou empty streams retain upstream diagnostics without replaying the POST
     assert.match(bundle, /Tudou \\u6D41\\u5F0F\\u54CD\\u5E94\\u683C\\u5F0F\\u5F02\\u5E38/);
     assert.match(bundle, /request-id=/);
     assert.match(bundle, /finishReason=/);
+    assert.match(bundle, /async function dW\(e,t,n,r,o\)\{o\?\.onProgress\?\.\(\{progress:10,stage:"generating"\}\)/);
 
     const start = bundle.indexOf("async function tudouGeminiStreamImages");
     const streamFunction = bundle.slice(start, bundle.indexOf("async function qMe", start));
