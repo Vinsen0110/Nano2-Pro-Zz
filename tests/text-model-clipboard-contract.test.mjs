@@ -298,14 +298,18 @@ test("Tudou proxy forwards Chat Completions unchanged", async () => {
     }
 });
 
-test("text requests reject a stale model from another site", () => {
+test("text requests use the global text route independently of the active image site", () => {
     assert.match(
         bundle,
         /model:n==="image"\|\|n==="text"\?ODe\(e,n,t\?\.metadata\?\.model\|\|r\)/,
     );
     assert.match(
         bundle,
-        /function ODe\(e,t,n\)\{const r=CS\(e,t\)\|\|\[\],o=yx\(t==="text"\?\(e\.textModel\|\|textRequestConfig\(e\)\.textModel\):n,e\.channels,t==="text"\?\(e\.textSiteId\|\|DP\):e\.activeSiteId\)/,
+        /function ODe\(e,t,n\)\{if\(t==="text"\)return textRequestConfig\(e\)\.textModel\|\|"";const r=CS\(e,t\)\|\|\[\],o=yx\(n,e\.channels,e\.activeSiteId\)/,
+    );
+    assert.doesNotMatch(
+        bundle,
+        /function ODe\(e,t,n\)\{const r=CS\(e,t\)\|\|\[\],o=yx\(t==="text"\?/,
     );
 });
 

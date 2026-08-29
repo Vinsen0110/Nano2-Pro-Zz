@@ -17,8 +17,23 @@ test("settings site tabs only change the site being edited", () => {
     );
     assert.match(
         bundle,
-        /j!==void 0&&v===a\.activeSiteId\?\{apiKey:j\}:\{\}/,
+        /j!==void 0&&v===A\.activeSiteId\?\{apiKey:j\}:\{\}/,
         "editing an inactive site must not replace the active top-level API key",
+    );
+});
+
+test("API key edits read the latest site config before readiness and close", () => {
+    assert.match(
+        bundle,
+        /updateSite=\(\$,j\)=>\{const A=Xr\.getState\?\.\(\)\.config\|\|a,T=A\.channels\.map\(N=>N\.id===v\?\{\.\.\.N,\.\.\.\$\}:N\)/,
+    );
+    assert.match(
+        bundle,
+        /C=\(\)=>\{setEditingKeyId\(null\),setKeyMenuOpen\(!1\);const A=Xr\.getState\?\.\(\)\.config\|\|a,I=A\.channels\.find\(N=>N\.id===v\)\|\|g,K=normalizeSiteApiKeys\(I\)\.apiKey;f\(!1\),K\.trim\(\)&&/,
+    );
+    assert.doesNotMatch(
+        bundle,
+        /C=\(\)=>\{setEditingKeyId\(null\),setKeyMenuOpen\(!1\),f\(!1\),a\.apiKey\.trim\(\)&&/,
     );
 });
 
