@@ -43,6 +43,13 @@ test("reverse image prompt panel supports the built-in preset and explicit disab
   assert.match(bundle, /localPromptPresetId:e\.metadata\?\.localPromptPresetId\?\?"builtin-image-reverse",prompt:e\.metadata\?\.prompt\?\?bg/);
 });
 
+test("built-in presets include the layer separation prompt", () => {
+  assert.match(
+    bundle,
+    /id:"builtin-separate-layers",label:"\\u5206\\u79BB\\u56FE\\u5C42",prompt:"\\u5206\\u79BB\\u56FE\\u4E2D\\u7684\\u6240\\u6709\\u5143\\u7D20\\uFF0C\\u4FDD\\u6301\\u539F\\u59CB\\u5143\\u7D20\\u7684\\u539F\\u59CB\\u4F4D\\u7F6E\\u4E0D\\u53D8\\uFF0C\\u7EC6\\u8282\\u6E05\\u6670\\uFF0C\\u8D85\\u6E05\\uFF0C8K",builtin:!0/,
+  );
+});
+
 test("settings ratio select renders the same compact ratio shape", () => {
   assert.match(bundle, /optionRender:\$=>y\.jsxs\("span",\{className:"flex min-w-0 items-center gap-2",children:\[ratioShape\(\{value:\$\.value\}\)/);
   assert.match(bundle, /labelRender:\$=>y\.jsxs\("span",\{className:"flex min-w-0 items-center gap-2",children:\[ratioShape\(\{value:\$\.value\}\)/);

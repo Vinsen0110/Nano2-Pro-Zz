@@ -660,7 +660,7 @@ v==="image"?y.jsx(cke,{node:e,config:w,isRunning:t,canSubmit:A||B,credits:j,onPr
 \u3010English Prompt\u3011
 \u4F7F\u7528\u51C6\u786E\u7684\u5546\u4E1A\u6444\u5F71\u3001\u6750\u8D28\u548C\u706F\u5149\u672F\u8BED\uFF0C\u5B8C\u6574\u8868\u8FBE\u540C\u6837\u4FE1\u606F\uFF0C\u4E0D\u5F97\u5220\u51CF\u4E2D\u6587\u4E2D\u7684\u7EC6\u8282\u3002
 
-\u4E0D\u8981\u8F93\u51FA\u5206\u6790\u6B65\u9AA4\u3001\u9879\u76EE\u8BF4\u660E\u3001\u603B\u7ED3\u6216\u5176\u4ED6\u5185\u5BB9\u3002`;;LOCAL_IMAGE_PROMPT_PRESETS.push({id:"builtin-image-reverse",label:"\u56FE\u7247\u53CD\u63A8",prompt:W0,builtin:!0})
+\u4E0D\u8981\u8F93\u51FA\u5206\u6790\u6B65\u9AA4\u3001\u9879\u76EE\u8BF4\u660E\u3001\u603B\u7ED3\u6216\u5176\u4ED6\u5185\u5BB9\u3002`;;LOCAL_IMAGE_PROMPT_PRESETS.push({id:"builtin-image-reverse",label:"\u56FE\u7247\u53CD\u63A8",prompt:W0,builtin:!0});LOCAL_IMAGE_PROMPT_PRESETS.push({id:"builtin-separate-layers",label:"\u5206\u79BB\u56FE\u5C42",prompt:"\u5206\u79BB\u56FE\u4E2D\u7684\u6240\u6709\u5143\u7D20\uFF0C\u4FDD\u6301\u539F\u59CB\u5143\u7D20\u7684\u539F\u59CB\u4F4D\u7F6E\u4E0D\u53D8\uFF0C\u7EC6\u8282\u6E05\u6670\uFF0C\u8D85\u6E05\uFF0C8K",builtin:!0})
 function LocalImagePromptPresetCreateDialog({open:e,onClose:t,onCreated:n,theme:r}){
 const o=useLocalImagePromptPresets(),a=o.filter(w=>!w.builtin),[i,l]=c.useState(""),[d,f]=c.useState(""),[m,h]=c.useState("");
 c.useEffect(()=>{e&&(l(""),f(""),h(""))},[e]);
