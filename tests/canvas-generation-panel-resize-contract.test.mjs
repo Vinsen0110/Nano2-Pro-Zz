@@ -7,7 +7,7 @@ const indexHtml = await readFile(new URL("../index.html", import.meta.url), "utf
 test("generation panels resize from the outer frame in both axes", () => {
     assert.match(
         indexHtml,
-        /\.canvas-generation-panel \{[^}]*position: relative;[^}]*display: flex;[^}]*flex-direction: column;[^}]*min-width: 220px;[^}]*min-height: 0;[^}]*max-width: calc\(100vw - 32px\) !important;[^}]*resize: none !important;[^}]*overflow: visible !important;/s,
+        /\.canvas-generation-panel \{[^}]*position: relative;[^}]*display: flex;[^}]*flex-direction: column;[^}]*min-width: 660px;[^}]*min-height: 0;[^}]*max-width: calc\(100vw - 32px\) !important;[^}]*resize: none !important;[^}]*overflow: visible !important;/s,
     );
     assert.match(
         indexHtml,
@@ -26,10 +26,18 @@ test("prompt editors no longer expose an inner resize handle", () => {
     );
 });
 
-test("parameter controls keep their widths while the toolbar adapts spacing", () => {
+test("parameter controls keep fixed widths and stay on one row", () => {
     assert.match(
         indexHtml,
-        /\.canvas-generation-toolbar \{[^}]*height: auto !important;[^}]*min-height: 48px;[^}]*flex-wrap: wrap;[^}]*align-content: center;/s,
+        /\.canvas-generation-toolbar \{[^}]*height: 48px !important;[^}]*min-height: 48px;[^}]*flex-wrap: nowrap;[^}]*align-content: center;[^}]*overflow: visible;/s,
+    );
+    assert.match(
+        indexHtml,
+        /\.canvas-generation-toolbar > div:first-child \{[^}]*flex: 0 0 auto;[^}]*flex-wrap: nowrap;/s,
+    );
+    assert.match(
+        indexHtml,
+        /\.canvas-generation-toolbar > div:last-child \{[^}]*margin-left: auto !important;/s,
     );
     assert.match(
         indexHtml,

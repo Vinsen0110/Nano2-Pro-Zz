@@ -4,6 +4,10 @@
     "api/tudou-proxy.js": {
       "maxDuration": 300,
       "supportsCancellation": true
+    },
+    "api/apimart-image.js": {
+      "maxDuration": 60,
+      "supportsCancellation": true
     }
   },
   "headers": [

@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { fetchApiMartResultImage } from "./apimart-result-image.js";
 import { inlineTudouGeminiReferences, isTudouGeminiImageTarget } from "./tudou-reference-images.js";
 
 const root = resolve(process.cwd());
@@ -229,6 +230,17 @@ async function proxyTudouImage(response, requestUrl) {
     }
 }
 
+async function proxyApiMartImage(response, requestUrl) {
+    try {
+        const upstream = await fetchApiMartResultImage(requestUrl.searchParams.get("url"));
+        await pipeFetchResponse(upstream, response, { "X-APIMart-Image-Proxy": "local-node-stream" });
+    } catch (error) {
+        console.error("APIMart image proxy failed:", errorDetails(error));
+        if (!response.headersSent) sendJson(response, 502, "APIMart image connection failed");
+        else response.destroy(error);
+    }
+}
+
 async function serveStatic(request, response, requestUrl) {
     let pathname;
     try {
@@ -272,6 +284,8 @@ const server = createServer(async (request, response) => {
             await proxyTudouApi(request, response, requestUrl);
         } else if (requestUrl.pathname === "/api/tudou-image") {
             await proxyTudouImage(response, requestUrl);
+        } else if (requestUrl.pathname === "/api/apimart-image") {
+            await proxyApiMartImage(response, requestUrl);
         } else {
             await serveStatic(request, response, requestUrl);
         }

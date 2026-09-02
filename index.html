@@ -99,6 +99,7 @@
                 var nativeFetch = window.fetch.bind(window);
                 var useLocalTudouProxy = Boolean(window.oldHouseDesktop) ||
                     location.hostname === "127.0.0.1" || location.hostname === "localhost";
+                var hostedProxyOrigin = location.hostname === "vinsen0110.github.io" ? "https://www.vinsen.top" : "";
                 var proxiedFetch = function (input, init) {
                     var method = String((init && init.method) || (input && input.method) || "GET").toUpperCase();
                     var rawUrl = typeof input === "string" || input instanceof URL ? String(input) : input && input.url;
@@ -110,6 +111,19 @@
                                 (target.hostname === "ai-tudou.net" || target.hostname.endsWith(".ai-tudou.net"));
                             if (isTudouResult) {
                                 return nativeFetch("/api/tudou-image?url=" + encodeURIComponent(target.href), init);
+                            }
+                        } catch (error) {}
+                    }
+                    if (method === "GET" && rawUrl) {
+                        try {
+                            var imageTarget = new URL(rawUrl, location.href);
+                            var isApiMartResult = imageTarget.protocol === "https:" &&
+                                (imageTarget.hostname === "getapib.org" ||
+                                    imageTarget.hostname.endsWith(".getapib.org") ||
+                                    imageTarget.hostname === "upload.apimart.ai" ||
+                                    imageTarget.hostname.endsWith(".upload.apimart.ai"));
+                            if (isApiMartResult) {
+                                return nativeFetch(hostedProxyOrigin + "/api/apimart-image?url=" + encodeURIComponent(imageTarget.href), init);
                             }
                         } catch (error) {}
                     }
@@ -154,9 +168,8 @@
             (function () {
                 var panelSelector = ".canvas-generation-panel";
                 var edgeSize = 16;
-                // Keep a small interaction floor so a frame never loses its resize handles.
-                // The old 360 x 150 floor made compact canvas panels impossible.
-                var minWidth = 220;
+                // Parameter controls stay on one row; resizing is absorbed by the prompt editor.
+                var minWidth = 660;
                 var minHeight = 96;
                 var active = null;
 
@@ -1161,7 +1174,7 @@
           display: flex;
           flex-direction: column;
           width: min(660px, calc(100vw - 32px));
-          min-width: 220px;
+          min-width: 660px;
           min-height: 0;
           max-width: calc(100vw - 32px) !important;
           box-sizing: border-box;
@@ -1239,15 +1252,19 @@
           flex: 0 0 auto;
         }
         .canvas-generation-toolbar {
-          height: auto !important;
+          height: 48px !important;
           min-height: 48px;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
           align-content: center;
+          overflow: visible;
         }
         .canvas-generation-toolbar > div:first-child {
-          flex: 1 1 auto;
+          flex: 0 0 auto;
           min-width: 0;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
+        }
+        .canvas-generation-toolbar > div:last-child {
+          margin-left: auto !important;
         }
         .canvas-generation-toolbar .canvas-model-select,
         .canvas-generation-toolbar .canvas-generation-select,
@@ -1281,18 +1298,22 @@
           width: min(740px, calc(100vw - 32px)) !important;
           max-width: calc(100vw - 32px) !important;
         }
+        .canvas-generation-panel:has(.canvas-generation-toolbar.is-apimart-official) {
+          width: min(860px, calc(100vw - 32px)) !important;
+          min-width: 860px;
+        }
         .canvas-generation-panel.canvas-generation-panel[data-canvas-resize-ready="true"] {
           width: var(--canvas-panel-resize-width) !important;
           height: var(--canvas-panel-resize-height) !important;
         }
         .canvas-generation-panel:has(.canvas-model-select[title^="gpt-image-2"]) .canvas-generation-toolbar {
-          height: auto !important;
+          height: 48px !important;
           min-height: 48px;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
         }
         .canvas-generation-panel:has(.canvas-model-select[title^="gpt-image-2"]) .canvas-generation-toolbar > div:first-child {
-          flex: 1 1 auto;
-          flex-wrap: wrap;
+          flex: 0 0 auto;
+          flex-wrap: nowrap;
         }
         .canvas-generation-toolbar .canvas-generate-button .bg-pink-100 {
           min-height: 20px;

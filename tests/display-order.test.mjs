@@ -11,26 +11,29 @@ import {
 
 const bundle = await readFile(new URL("../assets/index-B2KJ37fm.js", import.meta.url), "utf8");
 
-test("site displays use Tudou, Grsai, RH, Apilio order without mutating stored channels", () => {
+test("site displays use Tudou, Grsai, Mart, RH, Apilio order without mutating stored channels", () => {
     const channels = [
         { id: "default", name: "Apilio" },
         { id: "tudou", name: "Tudou" },
         { id: "runninghub", name: "RH" },
         { id: "grsai", name: "Grsai" },
+        { id: "apimart", name: "Mart" },
     ];
 
-    assert.deepEqual(SITE_DISPLAY_ORDER, ["tudou", "grsai", "runninghub", "default"]);
-    assert.deepEqual(orderSiteChannels(channels).map(({ name }) => name), ["Tudou", "Grsai", "RH", "Apilio"]);
-    assert.deepEqual(channels.map(({ name }) => name), ["Apilio", "Tudou", "RH", "Grsai"]);
+    assert.deepEqual(SITE_DISPLAY_ORDER, ["tudou", "grsai", "apimart", "runninghub", "default"]);
+    assert.deepEqual(orderSiteChannels(channels).map(({ name }) => name), ["Tudou", "Grsai", "Mart", "RH", "Apilio"]);
+    assert.deepEqual(channels.map(({ name }) => name), ["Apilio", "Tudou", "RH", "Grsai", "Mart"]);
     assert.deepEqual(
         orderModelReferences([
             "tudou::gpt-image-2",
             "default::nano-banana-pro",
             "runninghub::gpt-image-2",
             "runninghub::nano-banana-pro",
+            "apimart::nano-banana-pro",
         ]),
         [
             "tudou::gpt-image-2",
+            "apimart::nano-banana-pro",
             "runninghub::gpt-image-2",
             "runninghub::nano-banana-pro",
             "default::nano-banana-pro",
