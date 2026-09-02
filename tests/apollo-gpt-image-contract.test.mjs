@@ -21,14 +21,15 @@ test("Apollo GPT Image 2 keeps request model and resolution mapping isolated", (
 test("Apollo GPT Image 2 uses the RH quality and extended ratio controls", () => {
     assert.match(bundle, /isGptImageModel=pr\(e\.model\)==="gpt-image-2"&&\(isApilioSite\(e\)\|\|isTudouSite\(e\)\|\|isRunningHubSite\(e\)/);
     assert.match(bundle, /ratioPresets=orderRatioPresets\(isGptImageModel\?\[\.\.\.pg,\.\.\.GPT_IMAGE_EXTRA_RATIO_PRESETS\]/);
-    assert.match(bundle, /GPT_IMAGE_QUALITY_OPTIONS\.map\(k=>y\.jsx\(GL/);
+    assert.match(bundle, /gptQualityOptions=GPT_IMAGE_QUALITY_OPTIONS/);
+    assert.match(bundle, /children:gptQualityOptions\.map\(k=>y\.jsx\(GL/);
 });
 
 test("Apollo GPT Image 2 shows quality in the compact canvas toolbar", () => {
-    assert.match(bundle, /isGptImageConfig=\["gpt-image-2","gpt-image-2-vip"\]\.includes\(pr\(a\.imageModel\|\|a\.model\)\)&&\["apilio","tudou","runninghub","grsai"\]\.includes/);
+    assert.match(bundle, /isGptImageConfig=\["gpt-image-2","gpt-image-2-vip"\]\.includes\(pr\(a\.imageModel\|\|a\.model\)\)&&\["apilio","tudou","runninghub","grsai","apimart"\]\.includes/);
     assert.match(bundle, /u=Array\.isArray\(t\.channels\)\?bd\(t,t\.model\):t/);
-    assert.match(bundle, /isApilioSite\(u\)\|\|isTudouSite\(u\)\|\|isRunningHubSite\(u\)\|\|isGrsaiSite\(u\)/);
-    assert.match(bundle, /v\?y\.jsx\(n\$,\{value:w,items:GPT_IMAGE_QUALITY_OPTIONS/);
+    assert.match(bundle, /isApilioSite\(u\)\|\|isTudouSite\(u\)\|\|isRunningHubSite\(u\)\|\|isGrsaiSite\(u\)\|\|isApiMartSite\(u\)/);
+    assert.match(bundle, /y\.jsx\(n\$,\{value:w,items:GPT_IMAGE_QUALITY_OPTIONS/);
 });
 
 test("Apollo GPT Image 2 always submits async generations and edits", () => {

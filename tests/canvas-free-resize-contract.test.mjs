@@ -5,13 +5,16 @@ import test from "node:test";
 const bundle = await readFile(new URL("../assets/index-B2KJ37fm.js", import.meta.url), "utf8");
 const indexHtml = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
-test("canvas nodes resize width and height independently", () => {
-    assert.doesNotMatch(bundle, /keepRatio:e\.type===Ne\.Image/);
-    assert.doesNotMatch(bundle, /Ce\.current\.keepRatio/);
+test("image nodes keep their natural ratio while other canvas nodes resize freely", () => {
     assert.doesNotMatch(bundle, /Ye=220,it=160/);
     assert.match(bundle, /Ye=64,it=48/);
     assert.match(bundle, /Dt=Math\.max\(Ye,Ce\.current\.startWidth/);
     assert.match(bundle, /dt=Math\.max\(it,Ce\.current\.startHeight/);
+    assert.match(bundle, /Pt=e\.type===Ne\.Image&&!!e\.metadata\?\.content/);
+    assert.match(bundle, /Number\(e\.metadata\?\.naturalWidth\)\|\|Ce\.current\.startWidth/);
+    assert.match(bundle, /Number\(e\.metadata\?\.naturalHeight\)\|\|Ce\.current\.startHeight/);
+    assert.match(bundle, /ke=Math\.max\(Ye,it\*Vt/);
+    assert.match(bundle, /qe=ke\/Vt/);
 });
 
 test("text editors no longer carry hard min/max resize bounds", () => {
