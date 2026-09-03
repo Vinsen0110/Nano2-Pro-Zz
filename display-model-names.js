@@ -3,6 +3,7 @@ const DISPLAY_NAME_MAP = new Map([
 ]);
 const DISPLAY_ICON_MAP = new Map([
   ["gemini-3.7-flash", "./icons/gemini.svg"],
+  ["gemini-3.8-flash", "./icons/gemini.svg"],
 ]);
 
 const MODEL_CONTAINER_SELECTOR = [

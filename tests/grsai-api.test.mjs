@@ -85,4 +85,9 @@ test("bundle keeps Grsai generation, balance, and settings branches", () => {
     assert.match(bundle, /pr\(t\)==="gpt-image-2-vip"\?"gpt-image-2"/);
     assert.match(bundle, /fetchGrsaiApiKeyCredits\(K\).*De\(le\/1e4\)/);
     assert.match(bundle, /fetchGrsaiAccountCredits\(le,K\).*Rt\(Mt\/1e4\)/);
+    assert.match(bundle, /K=\(isGrsaiSite\(le\)\?N\.grsaiTotalBalanceToken\|\|"":N\.totalBalanceToken\|\|""\)\.trim\(\)/);
+    assert.match(bundle, /value:a\.grsaiTotalBalanceToken\|\|""/);
+    assert.match(bundle, /onChange:\$=>i\("grsaiTotalBalanceToken",\$\.target\.value\)/);
+    assert.match(bundle, /value:a\.totalBalanceToken/);
+    assert.match(bundle, /onChange:\$=>i\("totalBalanceToken",\$\.target\.value\)/);
 });

@@ -8,7 +8,7 @@ import tudouProxy from "../api/tudou-proxy.js";
 const bundle = await readFile(new URL("../assets/index-B2KJ37fm.js", import.meta.url), "utf8");
 
 test("supported text models stay isolated by site", () => {
-    assert.match(bundle, /APOLLO_TEXT_MODELS=\["gemini-3\.7-flash"\]/);
+    assert.match(bundle, /APOLLO_TEXT_MODELS=\["gemini-3\.8-flash"\]/);
     assert.match(bundle, /TUDOU_TEXT_MODELS=\["gpt-5\.5"\]/);
     assert.match(
         bundle,
@@ -25,11 +25,21 @@ test("supported text models stay isolated by site", () => {
 });
 
 test("text model labels are unified without changing site request IDs", () => {
-    assert.match(bundle, /const UNIFIED_TEXT_MODEL_NAME="gemini-3\.7-flash";function displayTextModelName/);
+    assert.match(
+        bundle,
+        /const APILIO_TEXT_MODEL_NAME="gemini-3\.8-flash",UNIFIED_TEXT_MODEL_NAME="gemini-3\.7-flash";/,
+    );
+    assert.match(
+        bundle,
+        /return r===DP&&n===APILIO_TEXT_MODEL_NAME\?APILIO_TEXT_MODEL_NAME:n===UNIFIED_TEXT_MODEL_NAME\|\|siteTextModelNames\(r\)\.includes\(n\)\?UNIFIED_TEXT_MODEL_NAME:n/,
+    );
     assert.match(bundle, /r==="text"\?displayTextModelName\(e,v\):pr\(v\)/);
     assert.match(bundle, /textValue:r==="text"\?displayTextModelName\(e,w\):pr\(w\)/);
-    assert.match(bundle, /APOLLO_TEXT_MODELS=\["gemini-3\.7-flash"\]/);
-    assert.match(bundle, /APOLLO_SITE_MODELS=\[[^\]]*gemini-3\.7-flash/);
+    assert.match(bundle, /APOLLO_TEXT_MODELS=\["gemini-3\.8-flash"\]/);
+    assert.match(bundle, /APOLLO_SITE_MODELS=\[[^\]]*gemini-3\.8-flash/);
+    assert.doesNotMatch(bundle, /APOLLO_TEXT_MODELS=\["gemini-3\.7-flash"\]/);
+    assert.match(bundle, /l7=\["default::gemini-3\.8-flash"\]/);
+    assert.match(bundle, /textModel:"default::gemini-3\.8-flash"/);
     assert.doesNotMatch(bundle, /APOLLO_TEXT_MODELS=\["gemini-3\.6-flash"\]/);
     assert.match(bundle, /TUDOU_TEXT_MODELS=\["gpt-5\.5"\]/);
     assert.match(bundle, /RUNNINGHUB_TEXT_MODELS/);
@@ -92,7 +102,7 @@ test("Apilio, Tudou, and RH text generation use Chat Completions messages", asyn
 
     const progress = [];
     const result = await request(
-        { baseUrl: "https://api.apilio.ai", apiKey: "test-key", model: "gemini-3.7-flash" },
+        { baseUrl: "https://api.apilio.ai", apiKey: "test-key", model: "gemini-3.8-flash" },
         [{
             role: "user",
             content: [
@@ -106,7 +116,7 @@ test("Apilio, Tudou, and RH text generation use Chat Completions messages", asyn
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, "https://api.apilio.ai/v1/chat/completions");
     const body = JSON.parse(requests[0].init.body);
-    assert.equal(body.model, "gemini-3.7-flash");
+    assert.equal(body.model, "gemini-3.8-flash");
     assert.deepEqual(body.messages, [{
         role: "user",
         content: [

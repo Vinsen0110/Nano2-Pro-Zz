@@ -13,6 +13,7 @@ test("maps the Grsai backend VIP model to the shared UI name", () => {
 
 test("uses the repository Gemini SVG for the unified Flash model", () => {
   assert.match(source, /\["gemini-3\.7-flash",\s*"\.\/icons\/gemini\.svg"\]/);
+  assert.match(source, /\["gemini-3\.8-flash",\s*"\.\/icons\/gemini\.svg"\]/);
   assert.match(source, /setAttribute\("src", icon\)/);
   assert.match(source, /\.canvas-composer-model-picker/);
   assert.match(source, /replaceWith\(replacement\)/);
